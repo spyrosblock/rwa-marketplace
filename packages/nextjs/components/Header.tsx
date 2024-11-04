@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SwitchTheme } from "./SwitchTheme";
@@ -102,12 +101,10 @@ export const Header = () => {
           )}
         </div>
         <Link href="/" passHref className="hidden lg:flex items-center gap-2 ml-4 mr-6 shrink-0">
-          <div className="flex relative w-10 h-10">
-            <Image alt="SE2 logo" className="cursor-pointer rounded-md" fill src="/logo_people.png" />
-          </div>
           <div className="flex flex-col">
-            <span className="font-bold leading-tight">AUTO DAO</span>
-            <span className="text-xs">Auto Tokenization</span>
+            <span className="leading-tight">
+              L <span style={{ color: "red" }}>£</span> G T
+            </span>
           </div>
         </Link>
         <ul className="hidden lg:flex lg:flex-nowrap menu menu-horizontal px-1 gap-2">

@@ -7,7 +7,7 @@ interface Props extends TextProps {
   className?: string;
   children: any;
   id?: string;
-  highlight?: string;
+  $highlight?: string;
   tiny?: boolean;
   ellipsis?: boolean;
   large?: boolean;
@@ -15,11 +15,12 @@ interface Props extends TextProps {
   xs?: boolean;
   bold?: boolean;
   color?: string;
+  htmlFor?: string;
 }
 
 export const StyledSpan = styled.span<Props>`
   position: relative;
-  ${({ highlight }) =>
+  ${({ $highlight }) =>
     `&:after {
         content: '';
         width: calc(100% - 3px);
@@ -29,14 +30,15 @@ export const StyledSpan = styled.span<Props>`
         right: 0px;
         position: absolute;
         opacity: 0.3;
-        background-color: var(--chakra-colors-${highlight}Brand)
+        background-color: var(--chakra-colors-${$highlight}Brand)
       `}
 `;
 
-const ExportText: FC<Props> = ({ className = '', children, highlight, tiny, bold, size = 'sm', ellipsis, ...props }) => {
+const ExportText: FC<Props> = ({ className = '', children, $highlight, tiny, bold, size = 'sm', ellipsis, ...props }) => {
   return (
     <Text
       {...props}
+      htmlFor={props.htmlFor}
       as={props.as || 'span'}
       className={`whitespace-pre-line
           ${tiny ? 'text-xs text-gray-400' : ''}
@@ -45,7 +47,7 @@ const ExportText: FC<Props> = ({ className = '', children, highlight, tiny, bold
           ${ellipsis ? ` text-ellipsis overflow-hidden ` : ''}
         ${className} `.replace(/(\r\n|\n|\r)/gm, "").trim()}
     >
-      {highlight ? <StyledSpan highlight={highlight}>{children}</StyledSpan> : children}
+      {$highlight ? <StyledSpan $highlight={$highlight}>{children}</StyledSpan> : children}
     </Text>
   );
 };

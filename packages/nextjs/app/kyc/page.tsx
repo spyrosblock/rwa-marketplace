@@ -63,7 +63,6 @@ const kinto = defineChain({
 
 const KintoConnect = () => {
   const [accountInfo, setAccountInfo] = useState<KintoAccountInfo | undefined>(undefined);
-  console.log("accountInfo:", accountInfo);
   const [kycViewerInfo, setKYCViewerInfo] = useState<any | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(true);
   const { NFTFactoryKyc } = getAllContracts(chainData.kycChainId);

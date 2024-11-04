@@ -1,6 +1,7 @@
 import React, { FC, ReactElement } from "react";
 import { Input, InputGroup, InputRightElement, Text, Textarea } from "@chakra-ui/react";
 import { capitalize } from "lodash";
+import { Text as AppText } from "~~/components";
 
 interface Props {
   name?: string;
@@ -82,7 +83,12 @@ const ExportedInput: FC<Props> = ({
             </InputGroup>
           )}
         </div>
-        {note && <span className="text-xs leading-5 text-gray-400 block mb-2">{note}</span>}
+        {/* {note && <span className="text-xs leading-5 text-gray-400 block mb-2">{note}</span>} */}
+        {note && (
+          <AppText tiny display="block">
+            {note}
+          </AppText>
+        )}
       </div>
     </div>
   );

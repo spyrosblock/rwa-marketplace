@@ -3,6 +3,7 @@ import AssetTypes from "../../../types/Asset";
 import { State } from "../page";
 // import UploadInput from "./UploadInput";
 import { Box, Flex, HStack, Select, Stack } from "@chakra-ui/react";
+import { isEmpty } from "lodash";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Alert, Button, Input, Text } from "~~/components";
 import { Label } from "~~/components/Input";
@@ -14,7 +15,8 @@ import { cleanAttributes, getAttribute, updateAttributes } from "~~/utils/helper
 export const DescribeForm = ({ state }: { state: State }) => {
   const { stage, setStage, asset, setAsset } = state;
   const error = ""; //const [error, setError] = useState("");
-  const [customAttribute, setCustomAttribute] = useState<any>({});
+  const [customAttributes, setCustomAttributes] = useState<any>({});
+  console.log("customAttibutes:", customAttributes, isEmpty(customAttributes));
   // const [pdfUploading, setPdfUploading] = useState<boolean>(false);
   // const pdfAttribute = getAttribute(chainData.linkedPdfKey, asset.attributes);
 
@@ -92,70 +94,75 @@ export const DescribeForm = ({ state }: { state: State }) => {
             value={getAttribute(chainData.linkedPdfKey, asset.attributes)?.value || ""}
             name={chainData.linkedPdfKey}
             label="Linked Document"
+            note={
+              "Input a link to the legal document that describes this asset, proves ownership and/or defines the rights associated with token ownership.  The more information you provide, the more trusted and reputable the token will be."
+            }
             placeholder={"https://website.com/document.pdf"}
             onChange={handleAttributeChange}
           />
-          {/* <div className="divider">OR</div>
-              <UploadInput
-                type="pdf"
-                loading={pdfUploading}
-                onDrop={handlePdfDrop}
-                height={"20vh"}
-                success={!!pdfAttribute}
-                acceptedFileType="pdf"
-              /> */}
         </Box>
-        <Input
-          name="category"
-          inputElement={
-            <Select
-              onChange={e => {
-                const newCategory = e.target.value;
-                if (newCategory !== null) {
-                  setAsset(AssetTypes[newCategory]);
-                }
-              }}
-              value={getAttribute("category", asset.attributes)?.value || ""}
-              className="placeholder:"
-            >
-              <option value="blank">None</option>
-              <option value="realEstate">Real Estate</option>
-              <option value="vehicle">Vehicle</option>
-              <option value="art">Art</option>
-            </Select>
-          }
-        />
-
-        {cleanAttributes(asset.attributes, chainData.linkedPdfKey).map((attr: any) =>
-          attr.hideInList ? null : (
-            <Input
-              key={attr.trait_type}
-              defaultValue={attr.value}
-              name={attr.trait_type}
-              type={attr.inputType}
-              label={attr.trait_type}
-              placeholder={attr.placeholder}
-              onChange={handleAttributeChange}
-            />
-          ),
-        )}
         <Box>
+          <Input
+            name="category"
+            inputElement={
+              <Select
+                onChange={e => {
+                  const newCategory = e.target.value;
+                  if (newCategory !== null) {
+                    setAsset(AssetTypes[newCategory]);
+                  }
+                }}
+                value={getAttribute("category", asset.attributes)?.value || ""}
+                className="placeholder:"
+              >
+                <option value="blank">None</option>
+                <option value="realEstate">Real Estate</option>
+                <option value="vehicle">Vehicle</option>
+                <option value="art">Art</option>
+              </Select>
+            }
+            note={
+              getAttribute("category", asset.attributes)
+                ? "The fields provided below are required for this category"
+                : ""
+            }
+          />
+
+          {cleanAttributes(asset.attributes, chainData.linkedPdfKey).map((attr: any) =>
+            attr.hideInList ? null : (
+              <Input
+                key={attr.trait_type}
+                defaultValue={attr.value}
+                name={attr.trait_type}
+                type={attr.inputType}
+                label={attr.trait_type}
+                placeholder={attr.placeholder}
+                onChange={handleAttributeChange}
+              />
+            ),
+          )}
           <Box>
             <HStack>
-              <Box width={"50%"} pr={1}>
+              <Box width={"50%"} pr={1} mt={2}>
                 <Label>Custom Attribute</Label>
               </Box>
               <Box width={"50%"} pr={1}>
                 <Label>Value </Label>
               </Box>
             </HStack>
-            <HStack mb={2}>
+            <HStack>
               <Box width={"50%"} pr={1}>
                 <Input
                   label={"none"}
                   type="text"
                   placeholder="attribute"
-                  onChange={e => setCustomAttribute({ ...customAttribute, trait_type: e.target.value })}
+                  onChange={e => {
+                    if (!e.target.value && isEmpty(customAttributes)) {
+                      setCustomAttributes({});
+                    } else {
+                      setCustomAttributes({ ...customAttributes, trait_type: e.target.value });
+                    }
+                  }}
                 />
               </Box>
               <Box width={"50%"}>
@@ -163,21 +170,33 @@ export const DescribeForm = ({ state }: { state: State }) => {
                   label={"none"}
                   type="text"
                   placeholder="value"
-                  onChange={e => setCustomAttribute({ ...customAttribute, value: e.target.value })}
+                  onChange={e => {
+                    if (!e.target.value && isEmpty(customAttributes)) {
+                      setCustomAttributes({});
+                    } else {
+                      setCustomAttributes({ ...customAttributes, value: e.target.value });
+                    }
+                  }}
                 />
               </Box>
             </HStack>
+            <Text tiny display={"block"}>
+              These attributes will be stored as attributes of the NFT
+            </Text>
           </Box>
-          <Button
-            w={"full"}
-            variant={"outline"}
-            colorScheme="teal"
-            onClick={() => {
-              setAsset({ ...asset, attributes: [...asset.attributes, customAttribute] });
-            }}
-          >
-            + Add Attribute
-          </Button>
+          {!isEmpty(customAttributes) && (
+            <Button
+              w={"full"}
+              mt={4}
+              variant={"outline"}
+              colorScheme="teal"
+              onClick={() => {
+                setAsset({ ...asset, attributes: [...asset.attributes, customAttributes] });
+              }}
+            >
+              + Another Attribute
+            </Button>
+          )}
         </Box>
 
         {error && <Alert type="error" message={error} />}
