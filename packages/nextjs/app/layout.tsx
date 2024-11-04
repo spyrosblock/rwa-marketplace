@@ -5,8 +5,8 @@ import "~~/styles/globals.css";
 import { getMetadata } from "~~/utils/scaffold-eth/getMetadata";
 
 export const metadata = getMetadata({
-  title: "AUTODAO",
-  description: "Tokenization for your Auto",
+  title: "L £ G T",
+  description: "Legally Empowered Governance Tokens that enable permissionless RWA NFTs",
 });
 
 const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {

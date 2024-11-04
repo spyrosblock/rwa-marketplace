@@ -16,7 +16,6 @@ export const DescribeForm = ({ state }: { state: State }) => {
   const { stage, setStage, asset, setAsset } = state;
   const error = ""; //const [error, setError] = useState("");
   const [customAttributes, setCustomAttributes] = useState<any>({});
-  console.log("customAttibutes:", customAttributes, isEmpty(customAttributes));
   // const [pdfUploading, setPdfUploading] = useState<boolean>(false);
   // const pdfAttribute = getAttribute(chainData.linkedPdfKey, asset.attributes);
 
