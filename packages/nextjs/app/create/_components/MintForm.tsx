@@ -29,7 +29,7 @@ export const MintForm = ({ state }: { state: State }) => {
   const router = useRouter();
   const [mintData, setMintData] = useState<any>({});
   // const [isKyc, setIsKyc] = useState<boolean>(false);
-  const [toIpfs] = useState<boolean>(false);
+  const [toIpfs, setToIpfs] = useState<boolean>(false);
   const { address } = useAccount();
   const [error, setError] = useState("");
   const [loadingStates, setLoadingStates] = useState<{ token?: boolean; nft?: boolean; amm?: boolean }>({});
@@ -44,7 +44,7 @@ export const MintForm = ({ state }: { state: State }) => {
     // transactionData: true,
     // receiptData: true,
   });
-  console.log("mintData & events:", mintData, events);
+  // -events- console.log("mintData & events:", mintData, events);
   // useScaffoldWatchContractEvent({
   //   contractName: "NFTFactory",
   //   eventName: "TokenMinted",
@@ -66,9 +66,10 @@ export const MintForm = ({ state }: { state: State }) => {
     console.log("minting begun");
     setError("");
     setLoadingStates({ nft: true });
+    let tokenUri = "";
     try {
       const preparedNft = sanitizeNftAttributes(asset);
-      let tokenUri = jsonToStringSafe(preparedNft);
+      tokenUri = jsonToStringSafe(preparedNft)!;
       if (toIpfs) {
         tokenUri = await singleUpload(new File([tokenUri || ""], "metadata.json"));
       }
@@ -98,6 +99,7 @@ export const MintForm = ({ state }: { state: State }) => {
       setError(error as string);
       setLoadingStates({});
     }
+    console.log("---> TokenURI: ", tokenUri);
     setLoadingStates({});
   };
 
@@ -173,17 +175,16 @@ export const MintForm = ({ state }: { state: State }) => {
           onChange={() => setIsKyc(!isKyc)}
         />{" "}
         Require KYC
-      </div>
+      </div> */}
       <div className="flex items-center space-2">
         <input
           type="checkbox"
-          defaultChecked
           className="checkbox checkbox-md mr-2"
           checked={toIpfs}
           onChange={() => setToIpfs(!toIpfs)}
         />{" "}
         Upload to IPFS
-      </div> */}
+      </div>
       {!canMint && !mintData.blockNumber ? (
         <Alert type="warning" message={"Insufficient data for mint." + inputsMissingMessage()} />
       ) : (
