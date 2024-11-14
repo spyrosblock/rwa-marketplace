@@ -1,7 +1,7 @@
 import React, { FC, ReactElement } from "react";
 import { Input, InputGroup, InputRightElement, Text, Textarea } from "@chakra-ui/react";
 import { capitalize } from "lodash";
-import { Text as AppText } from "~~/components";
+import { Text as LocalText } from "~~/components";
 
 interface Props {
   name?: string;
@@ -17,7 +17,7 @@ interface Props {
   note?: ReactElement | string | undefined;
   inputElement?: ReactElement;
   defaultValue?: any;
-  groupedElemet?: ReactElement;
+  groupedElement?: ReactElement;
   onChange?: (e: any) => void;
 }
 
@@ -40,7 +40,7 @@ const ExportedInput: FC<Props> = ({
   value,
   defaultValue,
   inputElement,
-  groupedElemet,
+  groupedElement,
   className,
   onChange,
 }) => {
@@ -79,15 +79,19 @@ const ExportedInput: FC<Props> = ({
                 autoComplete={autoComplete || name}
                 placeholder={placeholder}
               />
-              {groupedElemet && <InputRightElement width={"fit-content"}>{groupedElemet}</InputRightElement>}
+              {groupedElement && (
+                <InputRightElement width={"fit-content"} marginRight={1}>
+                  {groupedElement}
+                </InputRightElement>
+              )}
             </InputGroup>
           )}
         </div>
         {/* {note && <span className="text-xs leading-5 text-gray-400 block mb-2">{note}</span>} */}
         {note && (
-          <AppText tiny display="block">
+          <LocalText tiny mt={1} display="block">
             {note}
-          </AppText>
+          </LocalText>
         )}
       </div>
     </div>

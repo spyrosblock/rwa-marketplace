@@ -18,7 +18,10 @@ export const TokenizeForm = ({ state }: { state: State }) => {
     setErc20Data: (arg0: Erc20Data) => void;
   } = state;
 
-  const canProceed = erc20Data.name && erc20Data.symbol && erc20Data.supply;
+  // either all fields are filled or none are filled
+  const canProceed =
+    (erc20Data.name && erc20Data.symbol && erc20Data.supply) ||
+    (!erc20Data.name && !erc20Data.symbol && !erc20Data.supply);
 
   const handleInputChange = (e: { target: { value: any; name: any } }) => {
     const value = e.target.value;

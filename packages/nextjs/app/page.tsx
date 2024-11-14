@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import packageJson from "../../../package.json";
 import { Box } from "@chakra-ui/react";
 import type { NextPage } from "next";
@@ -7,6 +8,11 @@ import { Button, PageWrapper } from "~~/components";
 import Text from "~~/components/Text";
 
 const Home: NextPage = () => {
+  const [buttonClicked, setButtonClicked] = useState(false);
+  const handleButtonClick = () => {
+    setButtonClicked(true);
+    window.location.href = "/create";
+  };
   return (
     <PageWrapper className="justify-center">
       <div className="text-center">
@@ -17,20 +23,20 @@ const Home: NextPage = () => {
           <Text className="block" bold>
             Legally Empowered Governance Tokens
           </Text>
-          <Text>securely attach legal contracts to your RWA tokens</Text>
+          <Text display="block">securely attach legal contracts to a NFT and ERC20 tokens</Text>
+          <Text display="block">enabling an open & permissionless RWA protocol</Text>
           <Text display="block" mb={8}>
             used where <Text $highlight="red">digital</Text> meets <Text $highlight="red">physical</Text>
           </Text>
-          <Button colorScheme={"teal"} onClick={() => (window.location.href = "/create")}>
+          <Button colorScheme={"teal"} isLoading={buttonClicked} onClick={handleButtonClick}>
             Mint RWA Token
           </Button>
 
           <Box maxW="md" mb={8} marginX={"auto"} maxWidth={"500px"}></Box>
           <div className="text-gray-500 mb-4">
-            <div>handles real world cataclystic events</div>
+            <div>handles real world cataclysmic events</div>
             <div>applies jurisdictional compliance</div>
             <div>resolve on-chain disputes</div>
-            {/* <div>new financial products</div> */}
             <div>instant rwa liquidity</div>
           </div>
           <div className="space-y-3 mb-4">

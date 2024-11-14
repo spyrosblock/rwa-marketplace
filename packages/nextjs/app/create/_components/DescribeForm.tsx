@@ -1,9 +1,8 @@
-import { useState } from "react";
+// import { useState } from "react";
 import AssetTypes from "../../../types/Asset";
 import { State } from "../page";
 // import UploadInput from "./UploadInput";
 import { Box, Flex, HStack, Select, Stack } from "@chakra-ui/react";
-import { isEmpty } from "lodash";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Alert, Button, Input, Text } from "~~/components";
 import { Label } from "~~/components/Input";
@@ -15,7 +14,7 @@ import { cleanAttributes, getAttribute, updateAttributes } from "~~/utils/helper
 export const DescribeForm = ({ state }: { state: State }) => {
   const { stage, setStage, asset, setAsset } = state;
   const error = ""; //const [error, setError] = useState("");
-  const [customAttributes, setCustomAttributes] = useState<any>({});
+  // const [customAttributes, setCustomAttributes] = useState<any>({});
   // const [pdfUploading, setPdfUploading] = useState<boolean>(false);
   // const pdfAttribute = getAttribute(chainData.linkedPdfKey, asset.attributes);
 
@@ -60,17 +59,9 @@ export const DescribeForm = ({ state }: { state: State }) => {
     <>
       <Stack p={4} gap={4}>
         <Text tiny>
-          Describe your token and list useful information about it. Adding additional attributes below will be stored
-          the metadata following the
-          <a
-            style={{ textDecoration: "underline" }}
-            target="_blank"
-            href="https://docs.opensea.io/docs/metadata-standards#attributes"
-            rel="noreferrer"
-          >
-            {" "}
-            OpenSea Standard
-          </a>
+          Describe your token and list useful information about it. The more information you provide, the more trusted
+          and reputable the token will be. Selecting a category below will help you know what information to provide for
+          that specific asset class.
         </Text>
 
         <Input
@@ -86,7 +77,7 @@ export const DescribeForm = ({ state }: { state: State }) => {
           textarea
           defaultValue={asset.description}
           onChange={e => setAsset({ ...asset, description: e.target.value })}
-          placeholder="This token represents my physical asset located at..."
+          placeholder="This token represents my real world asset... it's a great asset because... this token represents involvement such that... etc."
         />
         <Box>
           <Input
@@ -94,7 +85,7 @@ export const DescribeForm = ({ state }: { state: State }) => {
             name={chainData.linkedPdfKey}
             label="Linked Document"
             note={
-              "Input a link to the legal document that describes this asset, proves ownership and/or defines the rights associated with token ownership.  The more information you provide, the more trusted and reputable the token will be."
+              "Input a link to the document that describes this asset, verifies authenticity and/or defines the rights associated with token ownership. It is encouraged that this document is hosted on a decentralized storage service such as IPFS and is notarized if being considered legally binding."
             }
             placeholder={"https://website.com/document.pdf"}
             onChange={handleAttributeChange}
@@ -155,12 +146,8 @@ export const DescribeForm = ({ state }: { state: State }) => {
                   label={"none"}
                   type="text"
                   placeholder="attribute"
-                  onChange={e => {
-                    if (!e.target.value && isEmpty(customAttributes)) {
-                      setCustomAttributes({});
-                    } else {
-                      setCustomAttributes({ ...customAttributes, trait_type: e.target.value });
-                    }
+                  onChange={() => {
+                    // TODO: just keep track of this in state, or use ref
                   }}
                 />
               </Box>
@@ -169,21 +156,36 @@ export const DescribeForm = ({ state }: { state: State }) => {
                   label={"none"}
                   type="text"
                   placeholder="value"
-                  onChange={e => {
-                    if (!e.target.value && isEmpty(customAttributes)) {
-                      setCustomAttributes({});
-                    } else {
-                      setCustomAttributes({ ...customAttributes, value: e.target.value });
-                    }
+                  groupedElement={
+                    <Button
+                      size={"sm"}
+                      onClick={() => {
+                        // TODO: add custom attribute to Asset
+                      }}
+                    >
+                      Add
+                    </Button>
+                  }
+                  onChange={() => {
+                    // TODO: keep track of value in state or as ref
                   }}
                 />
               </Box>
             </HStack>
-            <Text tiny display={"block"}>
-              These attributes will be stored as attributes of the NFT
+            <Text tiny display={"block"} mt={1}>
+              Adding custom attributes is optional, but recommended. They will be stored as part of the minted NFT and
+              will follow the{" "}
+              <a
+                style={{ textDecoration: "underline" }}
+                target="_blank"
+                href="https://docs.opensea.io/docs/metadata-standards#attributes"
+                rel="noreferrer"
+              >
+                OpenSea Standard
+              </a>
             </Text>
           </Box>
-          {!isEmpty(customAttributes) && (
+          {/* {!isEmpty(customAttributes) && (
             <Button
               w={"full"}
               mt={4}
@@ -195,7 +197,7 @@ export const DescribeForm = ({ state }: { state: State }) => {
             >
               + Another Attribute
             </Button>
-          )}
+          )} */}
         </Box>
 
         {error && <Alert type="error" message={error} />}
@@ -204,6 +206,12 @@ export const DescribeForm = ({ state }: { state: State }) => {
             <ChevronLeftIcon opacity={0} width="20" /> Next <ChevronRightIcon width={20} className="justify-self-end" />
           </Flex>
         </Button>
+        {!canProceed() && (
+          <Text tiny display={"block"}>
+            Button is disabled because of missing information in the form above such as name, description, linked
+            document, image or required asset fields.
+          </Text>
+        )}
       </Stack>
     </>
   );

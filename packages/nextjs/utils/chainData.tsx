@@ -20,7 +20,6 @@ import { base, baseSepolia, mainnet, sepolia } from "viem/chains";
 
 interface ChainData {
   [key: string]: any;
-  linkedTokenKey: string;
   defaultPDFHash: string;
   linkedPdfKey: string;
   linkedPoolKey: string;
@@ -31,10 +30,9 @@ interface ChainData {
   nftFactoryKycAddress: string;
 }
 const chainData: ChainData = {
-  linkedTokenKey: "Linked Token",
   externalKey: "external_url",
-  linkedPdfKey: "pdf",
-  linkedPoolKey: "Liquidity Pool",
+  linkedPdfKey: "linked_document",
+  linkedPoolKey: "liquidity_pool",
   baseIPFSUrl: "https://ipfs-gateway.legt.co/ipfs/",
   defaultPDFHash: "bafybeicqz376dgkrmrykjcrdafclqke4bzzqao3yymbbly4fjr4kdwttii",
   kycContractAddress: "0x33F28C3a636B38683a38987100723f2e2d3d038e",

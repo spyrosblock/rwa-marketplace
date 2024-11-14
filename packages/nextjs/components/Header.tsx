@@ -23,16 +23,16 @@ export const menuLinks: HeaderMenuLink[] = [
     label: "Create",
     href: "/create",
   },
+  // {
+  //   label: "Marketplace",
+  //   href: "/marketplace",
+  // },
+  // {
+  //   label: "KYC",
+  //   href: "/kyc",
+  // },
   {
-    label: "Marketplace",
-    href: "/marketplace",
-  },
-  {
-    label: "KYC",
-    href: "/kyc",
-  },
-  {
-    label: "Debug Contracts",
+    label: "Contracts",
     href: "/debug",
     icon: <BugAntIcon className="h-4 w-4" />,
   },
@@ -51,7 +51,7 @@ export const HeaderMenuLinks = () => {
               href={href}
               passHref
               className={`${
-                isActive ? "shadow-md" : ""
+                isActive ? "base-100" : ""
               } hover:shadow-md active:!text-neutral py-1.5 px-3 text-sm rounded-full gap-2 grid grid-flow-col`}
             >
               {icon}

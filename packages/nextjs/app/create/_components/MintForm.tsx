@@ -69,7 +69,7 @@ export const MintForm = ({ state }: { state: State }) => {
     let tokenUri = "";
     try {
       const preparedNft = sanitizeNftAttributes(asset);
-      tokenUri = jsonToStringSafe(preparedNft)!;
+      tokenUri = jsonToStringSafe(preparedNft) || "";
       if (toIpfs) {
         tokenUri = await singleUpload(new File([tokenUri || ""], "metadata.json"));
       }

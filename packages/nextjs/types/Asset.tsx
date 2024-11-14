@@ -35,7 +35,7 @@ export const art: Nft = {
   attributes: [
     { trait_type: "category", value: "art", hideInList: true },
     { trait_type: "title", value: "", placeholder: "Man in Hat", required: true },
-    { trait_type: "artist", value: "", placeholder: "Davinci", required: true },
+    { trait_type: "artist", value: "", placeholder: "DaVinci", required: true },
     { trait_type: "year", inputType: "number", value: "", placeholder: "1999", required: true },
     { trait_type: "medium", value: "" },
     { trait_type: "dimensions", value: "" },
