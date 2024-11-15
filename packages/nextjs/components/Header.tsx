@@ -31,12 +31,15 @@ export const menuLinks: HeaderMenuLink[] = [
   //   label: "KYC",
   //   href: "/kyc",
   // },
-  {
+];
+
+if (process.env.NODE_ENV === "development") {
+  menuLinks.push({
     label: "Contracts",
     href: "/debug",
     icon: <BugAntIcon className="h-4 w-4" />,
-  },
-];
+  });
+}
 
 export const HeaderMenuLinks = () => {
   const pathname = usePathname();

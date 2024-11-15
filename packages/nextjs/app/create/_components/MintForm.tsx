@@ -30,6 +30,7 @@ export const MintForm = ({ state }: { state: State }) => {
   const [mintData, setMintData] = useState<any>({});
   // const [isKyc, setIsKyc] = useState<boolean>(false);
   const [toIpfs, setToIpfs] = useState<boolean>(false);
+  const [isMinting, setIsMinting] = useState<boolean>(false);
   const { address } = useAccount();
   const [error, setError] = useState("");
   const [loadingStates, setLoadingStates] = useState<{ token?: boolean; nft?: boolean; amm?: boolean }>({});
@@ -232,7 +233,9 @@ export const MintForm = ({ state }: { state: State }) => {
             width={"full"}
             colorScheme={"teal"}
             isDisabled={!mintData.blockNumber}
+            isLoading={isMinting}
             onClick={() => {
+              setIsMinting(true);
               router.push(`/nft?id=${BigInt(events[0].args.nftId as bigint).toString()}`);
             }}
           >

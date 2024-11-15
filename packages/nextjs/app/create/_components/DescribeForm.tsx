@@ -1,4 +1,5 @@
 // import { useState } from "react";
+import { useState } from "react";
 import AssetTypes from "../../../types/Asset";
 import { State } from "../page";
 // import UploadInput from "./UploadInput";
@@ -7,13 +8,15 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Alert, Button, Input, Text } from "~~/components";
 import { Label } from "~~/components/Input";
 import chainData from "~~/utils/chainData";
-import { cleanAttributes, getAttribute, updateAttributes } from "~~/utils/helpers";
+import { cleanAttributes, createAttribute, getAttribute, updateAttributes } from "~~/utils/helpers";
 
 // TODO: all data fields aren't clearing on nft mint, such as document, the attributes of the nft itself
 
 export const DescribeForm = ({ state }: { state: State }) => {
   const { stage, setStage, asset, setAsset } = state;
   const error = ""; //const [error, setError] = useState("");
+  const [attributeInput, setAttributeInput] = useState<any>("");
+  const [valueInput, setValueInput] = useState<any>("");
   // const [customAttributes, setCustomAttributes] = useState<any>({});
   // const [pdfUploading, setPdfUploading] = useState<boolean>(false);
   // const pdfAttribute = getAttribute(chainData.linkedPdfKey, asset.attributes);
@@ -144,10 +147,11 @@ export const DescribeForm = ({ state }: { state: State }) => {
               <Box width={"50%"} pr={1}>
                 <Input
                   label={"none"}
+                  value={attributeInput}
                   type="text"
                   placeholder="attribute"
-                  onChange={() => {
-                    // TODO: just keep track of this in state, or use ref
+                  onChange={e => {
+                    setAttributeInput(e.target.value);
                   }}
                 />
               </Box>
@@ -155,19 +159,27 @@ export const DescribeForm = ({ state }: { state: State }) => {
                 <Input
                   label={"none"}
                   type="text"
+                  value={valueInput}
                   placeholder="value"
                   groupedElement={
                     <Button
                       size={"sm"}
                       onClick={() => {
-                        // TODO: add custom attribute to Asset
+                        if (attributeInput && valueInput) {
+                          const newAttribute = createAttribute(attributeInput, valueInput);
+                          if (newAttribute) {
+                            setAsset({ ...asset, attributes: [...asset.attributes, newAttribute] });
+                          }
+                          setAttributeInput("");
+                          setValueInput("");
+                        }
                       }}
                     >
                       Add
                     </Button>
                   }
-                  onChange={() => {
-                    // TODO: keep track of value in state or as ref
+                  onChange={e => {
+                    setValueInput(e.target.value);
                   }}
                 />
               </Box>

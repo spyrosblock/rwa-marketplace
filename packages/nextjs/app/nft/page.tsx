@@ -74,6 +74,7 @@ function NFT() {
     if (!data && tokenURI) {
       // check tokenURI if it is a string that can be decoded into an object, if not then request
       // TODO: logic is repeated in NftDataDisplay - consolidate
+      console.log("tokenURI:", tokenURI);
       let encodedBlockchainData;
       try {
         encodedBlockchainData = JSON.parse(tokenURI);

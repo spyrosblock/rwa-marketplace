@@ -178,8 +178,6 @@ function NFTDetails({
 
   if (isLoading || error) return <LoadingView error={error || ""} />;
 
-  console.log("nftData", isLocked);
-
   const details = [
     {
       label: "NFT Data",

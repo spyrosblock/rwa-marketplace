@@ -33,6 +33,7 @@ contract NFTFactory is ERC721URIStorage, Ownable, Pausable {
 	event MetadataUnlocked(uint256 tokenId);
 	event TokenPaused(uint256 tokenId);
 	event TokenUnpaused(uint256 tokenId);
+	event TokenBurned(uint256 tokenId);
 
 	constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) {}
 
@@ -99,6 +100,8 @@ contract NFTFactory is ERC721URIStorage, Ownable, Pausable {
 			paused: false
 		});
 
+		
+
 		// tokensByAddress[to].push(tokenId); // Add token to the new owner's list
 
 		emit TokenMinted(tokenId, linkedTokenAddress);
@@ -151,6 +154,15 @@ contract NFTFactory is ERC721URIStorage, Ownable, Pausable {
 		require(msg.sender == owner() || msg.sender == ownerOf(tokenId), "Caller is not the owner or NFT owner");
 		nftData[tokenId].paused = false;
 		emit TokenUnpaused(tokenId);
+	}
+
+	function burn(uint256 tokenId) public {
+		require(_exists(tokenId), "NFT does not exist");
+		require(msg.sender == owner() || msg.sender == ownerOf(tokenId), "Caller is not the owner or NFT owner");
+
+		// Burn the NFT
+		_burn(tokenId);
+		emit TokenBurned(tokenId);
 	}
 
 	function _beforeTokenTransfer(
