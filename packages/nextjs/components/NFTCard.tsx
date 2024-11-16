@@ -3,7 +3,7 @@ import Link from "next/link";
 import styled from "styled-components";
 import { Button, Card } from "~~/components";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
-import { getData, stringToJsonSafe } from "~~/utils/helpers";
+import { getData } from "~~/utils/helpers";
 
 interface CardProps {
   className?: string;
@@ -31,7 +31,7 @@ const NFTCard: React.FC<CardProps> = ({ className, id }) => {
     // TODO: handle loading and error states
     if (tokenURI && !data) {
       try {
-        setData(stringToJsonSafe(tokenURI));
+        setData(JSON.parse(tokenURI));
         // setLoading(false);
       } catch (error) {
         getData(tokenURI)

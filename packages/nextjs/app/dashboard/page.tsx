@@ -32,7 +32,6 @@ const DashboardPage: React.FC = () => {
     fetchTokenIds();
   }, [address, lastFetchedAddress, tokenIds.length, refetch, fetchedTokenIds]);
 
-  console.log("!ownedTokenIds:", address, tokenIds);
   return (
     <PageWrapper>
       {/* <Flex align="start" width={"full"}>
