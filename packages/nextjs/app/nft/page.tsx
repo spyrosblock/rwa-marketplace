@@ -5,12 +5,11 @@ import { useSearchParams } from "next/navigation";
 import LoadingView from "./_components/LoadingView";
 import NFTDetails from "./_components/NftDataDisplay";
 import { Box, Grid } from "@chakra-ui/react";
-import axios from "axios";
-import { isObject } from "lodash";
 import resolveConfig from "tailwindcss/resolveConfig";
 import { useAccount } from "wagmi";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
 import { content, theme as tailwindTheme } from "~~/tailwind.config";
+import { getData } from "~~/utils/helpers";
 import { useAllContracts } from "~~/utils/scaffold-eth/contractsData";
 import { useWindowSize } from "~~/utils/windowSize";
 
@@ -54,21 +53,6 @@ function NFT() {
     args: [BigInt(NftId)],
     ...overrideParameters,
   });
-
-  const getData = async (url: string) => {
-    const response = await axios.get(url).catch(error => {
-      console.log(error);
-      setError("HTTP Request Error");
-      throw "HTTP Request Error";
-    });
-    const data = response?.data;
-    if (isObject(data)) {
-      return data;
-    } else {
-      console.log("error:", response);
-      throw "Data Improperly Formatted Error:" + url;
-    }
-  };
 
   useEffect(() => {
     if (!data && tokenURI) {
