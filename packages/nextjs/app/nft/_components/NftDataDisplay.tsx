@@ -297,15 +297,15 @@ function NFTDetails({
   };
 
   return (
-    <Box p={4} pb={sideAlign ? 4 : 12} /* makes room for theme switch at the bottom */>
-      <div className={`flex flex-col justify-center mb-4 ${sideAlign ? "text-left" : "text-center"}`}>
-        <Text size="xl" bold mb={1}>
-          {data?.name}
+    <Box p={4} pb={sideAlign ? 4 : 12} className="bg-base-200" rounded={"lg"}>
+      <div className={`flex flex-col justify-center mb-4 text-left`}>
+        <Text size="lg" bold mb={1}>
+          {"Metadata"}
         </Text>
         <Text noOfLines={lineClamp ? 6 : undefined} onClick={toggleLineClamp} mb={4}>
           {data?.description}
         </Text>
-        <Code p={4} className="space-y-4" bg={"var(--chakra-colors-chakra-body-bg)"}>
+        <Code p={4} className="space-y-4" backgroundColor={"var(--chakra-colors-chakra-body-bg)"}>
           {details.map(({ label, children, hide }) => {
             if (hide) return null;
             return (

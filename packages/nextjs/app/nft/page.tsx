@@ -7,6 +7,7 @@ import NFTDetails from "./_components/NftDataDisplay";
 import { Box, Grid } from "@chakra-ui/react";
 import resolveConfig from "tailwindcss/resolveConfig";
 import { useAccount } from "wagmi";
+import { PageWrapper, Text } from "~~/components";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
 import { content, theme as tailwindTheme } from "~~/tailwind.config";
 import { getData } from "~~/utils/helpers";
@@ -58,18 +59,13 @@ function NFT() {
     if (!data && tokenURI) {
       // check tokenURI if it is a string that can be decoded into an object, if not then request
       // TODO: logic is repeated in NftDataDisplay - consolidate
-      console.log("tokenURI:", tokenURI);
-      let encodedBlockchainData;
       try {
-        encodedBlockchainData = JSON.parse(tokenURI);
-        console.log("encodedBlockchainData:", encodedBlockchainData);
-        setData(encodedBlockchainData);
+        setData(JSON.parse(tokenURI));
         setLoading(false);
       } catch (error) {
         getData(tokenURI)
-          .catch((error): any => {
+          .catch((): any => {
             setLoading(false);
-            console.log(error);
             setError(`Invalid JSON returned for token #${NftId}:${tokenURI}.`);
           })
           .then(response => {
@@ -85,51 +81,25 @@ function NFT() {
 
   // FULL SCREEN
   return (
-    <Grid w={"100vw"} h={"full"} templateColumns={isLargeScreen ? "45% 1fr" : ""} gap={0}>
-      {isLargeScreen ? (
-        <Box
-          backgroundImage={data?.image || ""}
-          backgroundSize={"contain"}
-          backgroundPosition={"center"}
-          backgroundRepeat={isLargeScreen ? "repeat" : "no-repeat"}
-          transition={"background-image 1s ease-in-out"}
-          display={"flex"}
-          justifyContent={"center"}
-          alignItems={"center"}
-          borderRadius={isLargeScreen ? 0 : "lg"}
-          borderRight={data?.image ? "" : "1px solid #CBCCE0"}
-        />
-      ) : (
-        <div className="indicator relative my-4 mx-auto">
-          <img
-            alt="NFT Image"
-            className="w-72 min-h-72 rounded-lg object-cover z-0"
-            src={data?.image}
-            style={{
-              objectFit: "cover",
-            }}
-            width="300"
+    <PageWrapper align="left">
+      <Text size="xl" bold align={"left"} mb="4">
+        {data.name}
+      </Text>
+      <Grid h={"full"} templateColumns={isLargeScreen ? "45% 1fr" : ""} gap={4}>
+        <Box flex={1}>
+          <img alt="NFT Image" className="rounded-lg object-cover z-0" src={data?.image} />
+        </Box>
+        <Box w={"full"} h={"full"} pos="relative" overflow={isLargeScreen ? "hidden scroll" : ""}>
+          <NFTDetails
+            metadata={data}
+            id={NftId}
+            chainId={chainId}
+            isSmallScreen={isSmallScreen}
+            sideAlign={isLargeScreen}
           />
-          <span className="indicator-item badge badge-secondary">#{NftId}</span>
-        </div>
-      )}
-
-      <Box
-        w={"full"}
-        h={"full"}
-        pos="relative"
-        overflow={isLargeScreen ? "hidden scroll" : ""}
-        pt={isLargeScreen ? 4 : 0}
-      >
-        <NFTDetails
-          metadata={data}
-          id={NftId}
-          chainId={chainId}
-          isSmallScreen={isSmallScreen}
-          sideAlign={isLargeScreen}
-        />
-      </Box>
-    </Grid>
+        </Box>
+      </Grid>
+    </PageWrapper>
   );
 }
 export default NFT;

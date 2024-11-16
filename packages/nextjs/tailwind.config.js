@@ -25,6 +25,7 @@ module.exports = {
           neutral: colors.lightestGrey,
           accent: colors.green,
           "base-100": colors.white,
+          "base-200": colors.lightestGrey,
           //   "primary-content": "#212638",
           // "secondary-content": "#212638",
           //   "accent-content": "#212638",
