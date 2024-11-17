@@ -73,7 +73,7 @@ function NFT() {
           setLoading(false);
         });
     }
-  }, [data, tokenURI, id]);
+  }, [data, tokenURI, id, setData, setLoading]);
 
   if (isLoading || error)
     return <LoadingView error={error || (isLoading || chainId ? "" : "You may need to connect your wallet to view")} />;
