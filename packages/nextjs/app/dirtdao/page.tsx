@@ -20,7 +20,8 @@ const DirtDao: React.FC = () => {
       <Text display="block" bold size="xxl">
         Cup of Dirt Dao
       </Text>
-      <Text>{address}</Text>
+      <Text mb={8}>{address}</Text>
+      <progress className="progress progress-accent w-56" value={25} max="100"></progress>
     </PageWrapper>
   );
 };

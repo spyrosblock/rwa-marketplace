@@ -22,7 +22,7 @@ function NFT() {
   const searchParams = useSearchParams();
   const index = searchParams.get("index");
   const id = searchParams.get("id");
-  const _chainId = searchParams.get("chainId");
+  const _chainId = searchParams.get("chain");
   const chainId = _chainId ? Number(_chainId) : undefined;
   const { NFTFactory } = useAllContracts(chainId);
   const { address } = useAccount();
@@ -43,10 +43,12 @@ function NFT() {
       address: NFTFactory.address,
     }
     : {};
+
   const { data: tokensByAddress = [] } = useScaffoldReadContract({
     contractName: "NFTFactory",
     functionName: "getTokensByAddress",
     args: [address],
+    ...overrideParameters,
   });
 
   const NftId = id || BigInt(tokensByAddress[Number(index)]).toString() || "";
@@ -62,7 +64,6 @@ function NFT() {
 
   useEffect(() => {
     if (!data && tokenURI) {
-      console.log("fetching");
       fetchNftData(tokenURI)
         .catch(() => {
           setLoading(false);
