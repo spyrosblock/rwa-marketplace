@@ -12,7 +12,7 @@ import { TokenizeForm } from "./_components/TokenizeForm";
 import { Box, Grid, Tab, TabList, TabPanel, TabPanels, Tabs } from "@chakra-ui/react";
 import { useDropzone } from "react-dropzone";
 import { PhotoIcon } from "@heroicons/react/24/outline";
-import { Input } from "~~/components";
+import { Input, PageWrapper } from "~~/components";
 import { singleUpload } from "~~/services/ipfs";
 
 enum Stage {
@@ -83,74 +83,76 @@ export default function Page() {
   };
 
   return (
-    <Grid w={"100vw"} h={"full"} templateColumns="repeat(2, 1fr)" gap={0}>
-      <Box w={"full"} h={"full"} pos="relative" overflow={"hidden scroll"}>
-        <Tabs w={"full"} h={"full"} index={stage} isLazy>
-          <TabList
-            pt={1}
-            position={"sticky"}
-            top={0}
-            backgroundColor={"var(--chakra-colors-chakra-body-bg)"}
-            className="z-10"
-          >
-            <Tab id="0" onClick={handleStageClick}>
-              Describe
-            </Tab>
-            <Tab id="1" onClick={handleStageClick}>
-              Tokenize
-            </Tab>
-            <Tab id="2" onClick={handleStageClick}>
-              Mint
-            </Tab>
-          </TabList>
+    <PageWrapper>
+      <Grid h={"full"} templateColumns="60% 1fr" gap={4}>
+        <Box w={"full"} h={"full"} pos="relative" overflow={"hidden scroll"} mt={"-15px"}>
+          <Tabs w={"full"} h={"full"} index={stage} isLazy ml={"-15px"}>
+            <TabList
+              pt={1}
+              position={"sticky"}
+              top={0}
+              backgroundColor={"var(--chakra-colors-chakra-body-bg)"}
+              className="z-10"
+            >
+              <Tab id="0" onClick={handleStageClick}>
+                Describe
+              </Tab>
+              <Tab id="1" onClick={handleStageClick}>
+                Tokenize
+              </Tab>
+              <Tab id="2" onClick={handleStageClick}>
+                Mint
+              </Tab>
+            </TabList>
 
-          <TabPanels>
-            <TabPanel p={0}>
-              <DescribeForm state={state} />
-            </TabPanel>
-            <TabPanel>
-              <TokenizeForm state={state} />
-            </TabPanel>
-            <TabPanel>
-              <MintForm state={state} />
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
-      </Box>
-      <Box display={"flex"} flexDir={"column"} justifyContent={"start"} alignItems={"center"} padding={50}>
-        <div
-          {...getRootProps()}
-          ref={dropZoneRef}
-          className="w-full min-h-96 bg-neutral flex justify-center items-center rounded-lg"
-        >
-          <Box
-            backgroundImage={asset.image || ""}
-            backgroundRepeat={"no-repeat"}
-            backgroundSize={"contain"}
-            backgroundPosition={"center"}
-            transition={"background-image 1s ease-in-out"}
-            display={"flex"}
-            justifyContent={"center"}
-            className={"w-full h-full " + (asset.image ? "auto" : "cursor-pointer")}
+            <TabPanels>
+              <TabPanel p={0}>
+                <DescribeForm state={state} />
+              </TabPanel>
+              <TabPanel>
+                <TokenizeForm state={state} />
+              </TabPanel>
+              <TabPanel>
+                <MintForm state={state} />
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+        </Box>
+        <Box display={"flex"} flexDir={"column"} justifyContent={"start"} alignItems={"center"} mt={8}>
+          <div
+            {...getRootProps()}
+            ref={dropZoneRef}
+            className="w-full min-h-96 bg-neutral flex justify-center items-center rounded-lg"
           >
-            {!asset.image && (
-              <div className="flex flex-col justify-center ">
-                <PhotoIcon className="mx-auto h-12 w-12 text-gray-300" aria-hidden="true" />
-                Upload Image
-              </div>
-            )}
-          </Box>
-        </div>
-        <div className="flex flex-col justify-center w-full ">
-          <div className="divider mt-8">OR</div>
-          <Input
-            name="NFT Image Url"
-            placeholder="https://ipfs.io/pathToImage.jpg"
-            value={asset.image}
-            onChange={handleInputChange}
-          />
-        </div>
-      </Box>
-    </Grid>
+            <Box
+              backgroundImage={asset.image || ""}
+              backgroundRepeat={"no-repeat"}
+              backgroundSize={"contain"}
+              backgroundPosition={"center"}
+              transition={"background-image 1s ease-in-out"}
+              display={"flex"}
+              justifyContent={"center"}
+              className={"w-full h-full " + (asset.image ? "auto" : "cursor-pointer")}
+            >
+              {!asset.image && (
+                <div className="flex flex-col justify-center ">
+                  <PhotoIcon className="mx-auto h-12 w-12 text-gray-300" aria-hidden="true" />
+                  Upload Image
+                </div>
+              )}
+            </Box>
+          </div>
+          <div className="flex flex-col justify-center w-full ">
+            <div className="divider mt-8">OR</div>
+            <Input
+              name="NFT Image Url"
+              placeholder="https://ipfs.io/pathToImage.jpg"
+              value={asset.image}
+              onChange={handleInputChange}
+            />
+          </div>
+        </Box>
+      </Grid>
+    </PageWrapper>
   );
 }

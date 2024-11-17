@@ -35,7 +35,6 @@ const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
       if ((address && tokenIds.length === 0) || address !== lastFetchedAddress) {
         await refetch();
         if (fetchedTokenIds) {
-          console.log("fetchedTokenIds", fetchedTokenIds);
           setTokenIds([...fetchedTokenIds]);
           setLastFetchedAddress(address);
         }

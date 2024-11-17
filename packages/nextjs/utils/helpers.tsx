@@ -137,3 +137,18 @@ export const ipfsToJsonSafe = async (url: any) => {
     console.error(error);
   }
 };
+
+export const fetchNftData = async (url: string) => {
+  try {
+    return JSON.parse(url);
+  } catch (error) {
+    const response = await axios.get(url).catch(error => {
+      throw "HTTP Request for NFT Error:" + error;
+    });
+    if (isObject(response)) {
+      return response;
+    } else {
+      throw "NFT Data Improperly Formatted:" + url;
+    }
+  }
+};

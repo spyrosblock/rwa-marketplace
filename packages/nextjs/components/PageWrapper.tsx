@@ -8,7 +8,7 @@ function PageWrapper({
   align?: string;
 }) {
   return (
-    <div className={`flex items-${align} flex-col flex-grow pt-11 p-8 w-full max-w-screen-xl mx-auto ${className}`}>
+    <div className={`flex items-${align} flex-col flex-grow p-5 w-full max-w-screen-xl mx-auto ${className}`}>
       {children}
     </div>
   );

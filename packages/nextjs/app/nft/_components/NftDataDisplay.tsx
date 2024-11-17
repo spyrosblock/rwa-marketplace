@@ -1,26 +1,24 @@
 "use client";
 
-import { ReactElement, useEffect, useRef, useState } from "react";
+import { ReactElement, useRef, useState } from "react";
 import Link from "next/link";
 import LoadingView from "./LoadingView";
 import Metadata from "./Metadata";
 import { Box, Code, Flex, Grid, GridItem } from "@chakra-ui/react";
-import axios from "axios";
-import { isObject } from "lodash";
 import { useAccount, useToken } from "wagmi";
 import {
   ArrowTopRightOnSquareIcon,
   BanknotesIcon,
   CodeBracketIcon,
-  DocumentIcon,
   PaperAirplaneIcon,
   PencilSquareIcon,
 } from "@heroicons/react/24/outline";
-import { Accordian, Button, Text } from "~~/components";
+import { Accordion, Button, Text } from "~~/components";
 import { Address } from "~~/components/scaffold-eth";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
 // import { useScaffoldContractRead, useScaffoldContractWrite } from "~~/hooks/scaffold-eth";
 import { useTargetNetwork } from "~~/hooks/scaffold-eth/useTargetNetwork";
+import useGlobalState from "~~/services/store/globalState";
 import chainData from "~~/utils/chainData";
 import { format, getAttribute } from "~~/utils/helpers";
 import { getBlockExplorerAddressLink } from "~~/utils/scaffold-eth";
@@ -43,21 +41,20 @@ function NFTDetails({
   const { address } = useAccount();
   const { NFTFactory } = useAllContracts(chainId);
   const { targetNetwork } = useTargetNetwork();
-  const [data, setData] = useState<any>(metadata);
   const [lineClamp, setLineClamp] = useState<boolean>(true);
-  const [error, setError] = useState<string>();
+  const [error] = useState<string>();
   const [input, setInput] = useState<string>();
-  const [isLoading, setLoading] = useState<boolean>(metadata ? false : true);
+  const [isLoading] = useState<boolean>(metadata ? false : true);
   const [isTransfer, setTransfer] = useState<boolean>();
   const [isTokenUri, setTokenUri] = useState<boolean>();
   const transferInput = useRef<HTMLInputElement>(null);
   const bigIntId = BigInt(id);
+  const [data] = useGlobalState("currentNft");
 
   const toggleLineClamp = () => {
     setLineClamp(!lineClamp);
   };
 
-  const PDFAttribute = getAttribute(chainData.linkedPdfKey, data?.attributes);
   const PoolAttribute = getAttribute(chainData.linkedPoolKey, data?.attributes);
   const selectedChainId = chainId || targetNetwork?.id;
   /* prettier-ignore */
@@ -78,13 +75,6 @@ function NFTDetails({
   //   functionName: "safeTransferFrom",
   //   ...overrideParameters,
   // });
-
-  const tokenURI = useScaffoldReadContract({
-    contractName: "NFTFactory",
-    functionName: "tokenURI",
-    args: [bigIntId],
-    ...overrideParameters,
-  }).data;
 
   const [status, linkedTokenAddress, , isLocked] =
     useScaffoldReadContract({
@@ -113,20 +103,6 @@ function NFTDetails({
   );
   const blockExplorerFactoryLink = getBlockExplorerAddressLink(chainData[selectedChainId], NFTFactory?.address);
 
-  const getData = async (url: string) => {
-    const response = await axios.get(url).catch(error => {
-      console.log(error);
-      setError("HTTP Request Error");
-      throw "HTTP Request Error";
-    });
-    const data = response?.data;
-    if (isObject(data)) {
-      return data;
-    } else {
-      console.log("error:", response);
-      throw "Data Improperly Formated Error:" + url;
-    }
-  };
   const setTokenURI = async () => {
     if (!isTokenUri) {
       setTokenUri(true);
@@ -151,30 +127,6 @@ function NFTDetails({
       setTransfer(false);
     }
   };
-
-  useEffect(() => {
-    if (!data && tokenURI) {
-      // check tokenURI if it is a string that can be decoded into an object
-      // if not then request
-      let encodedBlockchainData;
-      try {
-        encodedBlockchainData = JSON.parse(tokenURI);
-        setData(encodedBlockchainData);
-        setLoading(false);
-      } catch (error) {
-        getData(tokenURI)
-          .catch((error): any => {
-            setLoading(false);
-            console.log(error);
-            setError(`Invalid JSON returned for token #${Number(id)}:${tokenURI}.`);
-          })
-          .then(response => {
-            setData(response);
-            setLoading(false);
-          });
-      }
-    }
-  }, [data, tokenURI, id]);
 
   if (isLoading || error) return <LoadingView error={error || ""} />;
 
@@ -324,22 +276,9 @@ function NFTDetails({
         </Code>
       </div>
       <Box mb={3} className="space-y-2">
-        {/* VIEW PDF */}
-        {PDFAttribute && (
-          <Accordian
-            title={
-              <>
-                PDF&nbsp;
-                <DocumentIcon width="22px" />
-              </>
-            }
-          >
-            <embed src={PDFAttribute.value} width="100%" height="500px" />
-          </Accordian>
-        )}
         {/* PURCHASE - UNISWAP WIDGET NOT WORKING ATM as expected */}
         {/* {isOwner && linkedTokenData && (
-          <Accordian
+          <Accordion
             title={
               <>
                 PURCHASE &nbsp;&nbsp;
@@ -354,19 +293,20 @@ function NFTDetails({
               height="600px"
               width="100%"
             />
-          </Accordian>
+          </Accordion>
         )} */}
         {!isSmallScreen && isOwner && (
-          <Accordian
+          <Accordion
+            className="bg-base-100"
             title={
               <>
-                METADATA&nbsp;&nbsp;
+                Raw&nbsp;&nbsp;
                 <CodeBracketIcon width="25px" />
               </>
             }
           >
             <Metadata json={data} tokenId={id} />
-          </Accordian>
+          </Accordion>
         )}
       </Box>
       {/* OWNER ACTIONS */}

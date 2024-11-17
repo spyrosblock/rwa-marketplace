@@ -21,6 +21,10 @@ export const HeaderMenuLinks = () => {
       label: "Create",
       href: "/create",
     },
+    {
+      label: "☕️ ⛰ 🚀 ",
+      href: "/dirtdao",
+    },
   ];
 
   if (process.env.NODE_ENV === "development") {
@@ -32,7 +36,6 @@ export const HeaderMenuLinks = () => {
   }
 
   const [tokenIds] = useGlobalState("userOwnedTokenIds");
-  console.log("tokenIds", tokenIds);
   if (tokenIds.length > 0) {
     menuLinks.unshift({
       label: "Dashboard",
