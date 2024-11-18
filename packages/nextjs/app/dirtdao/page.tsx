@@ -1,16 +1,31 @@
 "use client";
 
+import React, { useEffect } from "react";
 import { TokenSaleWidget } from "./TokenSaleWidget";
+import { useAccount } from "wagmi";
+import { PageWrapper, Text } from "~~/components";
 
-const DirtDaoPage = () => {
+const DirtDao: React.FC = () => {
+  const { address } = useAccount();
+
+  useEffect(() => {
+    const fetchTokenIds = async () => {
+      // some fetch logic
+    };
+
+    fetchTokenIds();
+  }, []);
+
   return (
-    <div className="flex flex-col gap-6 py-8 px-4 lg:px-8 min-h-screen">
-      <h1 className="text-4xl font-bold text-center mb-8">DirtDAO Token Sale</h1>
-      <div className="flex flex-col items-center gap-4 bg-base-100 shadow-lg rounded-2xl p-6 w-full max-w-lg mx-auto">
-        <TokenSaleWidget />
-      </div>
-    </div>
+    <PageWrapper>
+      <Text display="block" bold size="xxl">
+        Cup of Dirt Dao
+      </Text>
+      <Text mb={8}>{address}</Text>
+      <progress className="progress progress-accent w-56" value={25} max="100"></progress>
+      <TokenSaleWidget />
+    </PageWrapper>
   );
 };
 
-export default DirtDaoPage;
+export default DirtDao;

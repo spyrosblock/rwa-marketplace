@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import styled from "styled-components";
 import { Button, Card } from "~~/components";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
-import { ipfsToJsonSafe, stringToJsonSafe } from "~~/utils/helpers";
+import { getData } from "~~/utils/helpers";
 
 interface CardProps {
   className?: string;
@@ -22,15 +22,31 @@ const NFTCard: React.FC<CardProps> = ({ className, id }) => {
     args: [bigIntId],
   }).data;
 
-  // console.log("!id and data", bigIntId, tokenURI);
+  const [data, setData] = useState<any>();
+  // const [error, setError] = useState<string>();
+  // const [isLoading, setLoading] = useState<boolean>(true);
 
-  console.log("tokenURI", tokenURI);
-
+  useEffect(() => {
+    // handles non-ipfs and json set on smart contract itself
+    // TODO: handle loading and error states
+    if (tokenURI && !data) {
+      try {
+        setData(JSON.parse(tokenURI));
+        // setLoading(false);
+      } catch (error) {
+        getData(tokenURI)
+          .catch((): any => {
+            // setLoading(false);
+            // setError(`Invalid JSON returned for token #${id}:${tokenURI}.`);
+          })
+          .then(response => {
+            setData(response);
+            // setLoading(false);
+          });
+      }
+    }
+  }, [data, tokenURI, id]);
   if (!tokenURI) return;
-
-  let nftData;
-  if (tokenURI.slice(0, 4) === "http") nftData = ipfsToJsonSafe(tokenURI);
-  else nftData = stringToJsonSafe(tokenURI);
 
   // const metadata = (
   //   <div className="grid grid-cols-2 gap-2">
@@ -44,11 +60,11 @@ const NFTCard: React.FC<CardProps> = ({ className, id }) => {
   //   </div>
   // );
   // symbol id address chain
-  return nftData ? (
+  return data ? (
     <StyledCard
-      title={nftData?.name}
+      title={data?.name}
       className={`${className || ""}`}
-      imageUrl={nftData.image}
+      imageUrl={data.image}
       footer={
         <Link className="w-full" href={`/nft?id=${id}`}>
           <Button width={"full"} colorScheme="teal">
@@ -57,7 +73,7 @@ const NFTCard: React.FC<CardProps> = ({ className, id }) => {
         </Link>
       }
     >
-      {nftData.description}
+      {data.description}
       {/* <div className="divider"></div>
       {metadata} */}
     </StyledCard>

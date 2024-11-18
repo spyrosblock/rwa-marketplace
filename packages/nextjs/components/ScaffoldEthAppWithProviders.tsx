@@ -7,16 +7,42 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
 import { Toaster } from "react-hot-toast";
 import { WagmiProvider } from "wagmi";
+import { useAccount } from "wagmi";
 import { Header } from "~~/components/Header";
 import { BlockieAvatar } from "~~/components/scaffold-eth";
 import { ProgressBar } from "~~/components/scaffold-eth/ProgressBar";
 import { useInitializeNativeCurrencyPrice } from "~~/hooks/scaffold-eth";
+import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
+import useGlobalState from "~~/services/store/globalState";
 import { wagmiConfig } from "~~/services/web3/wagmiConfig";
 import theme from "~~/tailwind.config";
 
 const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
   useInitializeNativeCurrencyPrice();
+  const [lastFetchedAddress, setLastFetchedAddress] = useState<string | undefined>(undefined);
+  const [tokenIds, setTokenIds] = useGlobalState("userOwnedTokenIds");
+  const { address } = useAccount();
 
+  const { data: fetchedTokenIds, refetch } = useScaffoldReadContract({
+    contractName: "NFTFactory",
+    functionName: "getTokensByAddress",
+    args: [address],
+  });
+
+  useEffect(() => {
+    // needs to go top level for menu links
+    const fetchTokenIds = async () => {
+      if ((address && tokenIds.length === 0) || address !== lastFetchedAddress) {
+        await refetch();
+        if (fetchedTokenIds) {
+          setTokenIds([...fetchedTokenIds]);
+          setLastFetchedAddress(address);
+        }
+      }
+    };
+
+    fetchTokenIds();
+  }, [address, lastFetchedAddress, tokenIds.length, refetch, fetchedTokenIds, setTokenIds]);
   return (
     <div className="h-screen">
       <div className="flex flex-col h-full">

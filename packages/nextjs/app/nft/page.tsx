@@ -5,12 +5,15 @@ import { useSearchParams } from "next/navigation";
 import LoadingView from "./_components/LoadingView";
 import NFTDetails from "./_components/NftDataDisplay";
 import { Box, Grid } from "@chakra-ui/react";
-import axios from "axios";
-import { isObject } from "lodash";
 import resolveConfig from "tailwindcss/resolveConfig";
 import { useAccount } from "wagmi";
+import { DocumentIcon } from "@heroicons/react/24/outline";
+import { Accordion, PageWrapper, Text } from "~~/components";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
+import useGlobalState from "~~/services/store/globalState";
 import { content, theme as tailwindTheme } from "~~/tailwind.config";
+import chainData from "~~/utils/chainData";
+import { fetchNftData, getAttribute } from "~~/utils/helpers";
 import { useAllContracts } from "~~/utils/scaffold-eth/contractsData";
 import { useWindowSize } from "~~/utils/windowSize";
 
@@ -19,17 +22,18 @@ function NFT() {
   const searchParams = useSearchParams();
   const index = searchParams.get("index");
   const id = searchParams.get("id");
-  const _chainId = searchParams.get("chainId");
+  const _chainId = searchParams.get("chain");
   const chainId = _chainId ? Number(_chainId) : undefined;
   const { NFTFactory } = useAllContracts(chainId);
   const { address } = useAccount();
-  const [data, setData] = useState<any>();
+  const [data, setData] = useGlobalState<any>("currentNft");
   const [error, setError] = useState<string>();
   const [isLoading, setLoading] = useState<boolean>(true);
   const { width } = useWindowSize();
   const { theme } = resolveConfig({ theme: tailwindTheme, content });
   const isLargeScreen = width > Number(theme.screens.md.substring(0, theme.screens.md.length - 2));
   const isSmallScreen = width < Number(theme.screens.sm.substring(0, theme.screens.sm.length - 2));
+  const PDFAttribute = getAttribute(chainData.linkedPdfKey, data?.attributes);
 
   /* prettier-ignore */
   const overrideParameters = chainId
@@ -39,14 +43,15 @@ function NFT() {
       address: NFTFactory.address,
     }
     : {};
+
   const { data: tokensByAddress = [] } = useScaffoldReadContract({
     contractName: "NFTFactory",
     functionName: "getTokensByAddress",
     args: [address],
+    ...overrideParameters,
   });
 
-  // todo: not getting the index / id think correctly, can only lookup by id
-  const NftId = Number(id) || BigInt(tokensByAddress[Number(index)]).toString() || "";
+  const NftId = id || BigInt(tokensByAddress[Number(index)]).toString() || "";
 
   const { data: tokenURI } = useScaffoldReadContract({
     contractName: "NFTFactory",
@@ -55,97 +60,65 @@ function NFT() {
     ...overrideParameters,
   });
 
-  const getData = async (url: string) => {
-    const response = await axios.get(url).catch(error => {
-      console.log(error);
-      setError("HTTP Request Error");
-      throw "HTTP Request Error";
-    });
-    const data = response?.data;
-    if (isObject(data)) {
-      return data;
-    } else {
-      console.log("error:", response);
-      throw "Data Improperly Formatted Error:" + url;
-    }
-  };
+  // TODO: find out why after initial loads tokenURI reverts back to undefined
 
   useEffect(() => {
     if (!data && tokenURI) {
-      // check tokenURI if it is a string that can be decoded into an object, if not then request
-      // TODO: logic is repeated in NftDataDisplay - consolidate
-      console.log("tokenURI:", tokenURI);
-      let encodedBlockchainData;
-      try {
-        encodedBlockchainData = JSON.parse(tokenURI);
-        console.log("encodedBlockchainData:", encodedBlockchainData);
-        setData(encodedBlockchainData);
-        setLoading(false);
-      } catch (error) {
-        getData(tokenURI)
-          .catch((error): any => {
-            setLoading(false);
-            console.log(error);
-            setError(`Invalid JSON returned for token #${NftId}:${tokenURI}.`);
-          })
-          .then(response => {
-            setData(response);
-            setLoading(false);
-          });
-      }
+      fetchNftData(tokenURI)
+        .catch(() => {
+          setLoading(false);
+          setError(`Invalid JSON returned for token #${Number(id)}:${tokenURI}.`);
+        })
+        .then(response => {
+          setData(response);
+          setLoading(false);
+        });
     }
-  }, [data, tokenURI, NftId, id, index, address]);
+  }, [data, tokenURI, id, setData, setLoading]);
 
   if (isLoading || error)
     return <LoadingView error={error || (isLoading || chainId ? "" : "You may need to connect your wallet to view")} />;
 
   // FULL SCREEN
   return (
-    <Grid w={"100vw"} h={"full"} templateColumns={isLargeScreen ? "45% 1fr" : ""} gap={0}>
-      {isLargeScreen ? (
-        <Box
-          backgroundImage={data?.image || ""}
-          backgroundSize={"contain"}
-          backgroundPosition={"center"}
-          backgroundRepeat={isLargeScreen ? "repeat" : "no-repeat"}
-          transition={"background-image 1s ease-in-out"}
-          display={"flex"}
-          justifyContent={"center"}
-          alignItems={"center"}
-          borderRadius={isLargeScreen ? 0 : "lg"}
-          borderRight={data?.image ? "" : "1px solid #CBCCE0"}
-        />
-      ) : (
-        <div className="indicator relative my-4 mx-auto">
-          <img
-            alt="NFT Image"
-            className="w-72 min-h-72 rounded-lg object-cover z-0"
-            src={data?.image}
-            style={{
-              objectFit: "cover",
-            }}
-            width="300"
+    <PageWrapper align="left">
+      <Text size="xl" bold align={"left"} mb="4">
+        {data.name}
+      </Text>
+      <Grid h={"fit-content"} templateColumns={isLargeScreen ? "50% 1fr" : ""} gap={4} mb="4">
+        <Box flex={1}>
+          <img alt="NFT Image" className="rounded-lg object-cover z-0" src={data?.image} />
+        </Box>
+        <Box w={"full"} h={"full"} pos="relative" overflow={isLargeScreen ? "hidden scroll" : ""}>
+          <NFTDetails
+            metadata={data}
+            id={NftId}
+            chainId={chainId}
+            isSmallScreen={isSmallScreen}
+            sideAlign={isLargeScreen}
           />
-          <span className="indicator-item badge badge-secondary">#{NftId}</span>
-        </div>
+        </Box>
+      </Grid>
+      {PDFAttribute && (
+        <Box display={"flex"} justifyContent={"center"} mt={4}>
+          <Accordion
+            open
+            // className="bg-base-200 max-w-[911px]"
+            className="bg-base-200"
+            title={
+              <>
+                Attached Document&nbsp;
+                <DocumentIcon width="22px" />
+              </>
+            }
+          >
+            <Box h={"855px"} margin="0 auto" maxW={"855px"} className="" display={"flex"} justifyContent={"center"}>
+              <embed src={PDFAttribute.value} height="100%" width="100%" />
+            </Box>
+          </Accordion>
+        </Box>
       )}
-
-      <Box
-        w={"full"}
-        h={"full"}
-        pos="relative"
-        overflow={isLargeScreen ? "hidden scroll" : ""}
-        pt={isLargeScreen ? 4 : 0}
-      >
-        <NFTDetails
-          metadata={data}
-          id={NftId}
-          chainId={chainId}
-          isSmallScreen={isSmallScreen}
-          sideAlign={isLargeScreen}
-        />
-      </Box>
-    </Grid>
+    </PageWrapper>
   );
 }
 export default NFT;

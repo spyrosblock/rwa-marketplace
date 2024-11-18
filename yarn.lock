@@ -4407,6 +4407,7 @@ __metadata:
     react-copy-to-clipboard: ^5.1.0
     react-dom: ^18.2.0
     react-dropzone: ^14.2.3
+    react-hooks-global-state: ^2.1.0
     react-hot-toast: ^2.4.0
     styled-components: ^6.1.12
     tailwindcss: ^3.4.3
@@ -16097,6 +16098,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-hooks-global-state@npm:^2.1.0":
+  version: 2.1.0
+  resolution: "react-hooks-global-state@npm:2.1.0"
+  dependencies:
+    zustand: 4.0.0
+  peerDependencies:
+    react: ">=16.8.0"
+  checksum: 43e08b617fec1d6418eb47843d917dd9767f09ede8a3e54695d8071c6042572337d2f0403ce845ff0eaad0f65cb88f11d40e5886665e3eb61ab40878d1f4b566
+  languageName: node
+  linkType: hard
+
 "react-hot-toast@npm:^2.4.0":
   version: 2.4.1
   resolution: "react-hot-toast@npm:2.4.1"
@@ -20037,6 +20049,23 @@ __metadata:
   peerDependencies:
     ethers: ^5.7.0
   checksum: f702a3437f48a8d42c4bb35b8dd13671a168aadfc4e23ce723d62959220ccb6bf9c529c60331fe5b91afaa622147c6a37490551474fe3e35c06ac476524b5160
+  languageName: node
+  linkType: hard
+
+"zustand@npm:4.0.0":
+  version: 4.0.0
+  resolution: "zustand@npm:4.0.0"
+  dependencies:
+    use-sync-external-store: 1.2.0
+  peerDependencies:
+    immer: ">=9.0"
+    react: ">=16.8"
+  peerDependenciesMeta:
+    immer:
+      optional: true
+    react:
+      optional: true
+  checksum: b8ae5971dff79a1007d46f9a6bfa39ed5cc5b101a877eeec069ebdb6c8285ec8e3463e40cfa7c0f1507a41f43fe26ffb44b556063cb70ac03bccf1ea6e0f69d6
   languageName: node
   linkType: hard
 

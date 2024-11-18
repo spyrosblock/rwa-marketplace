@@ -11,7 +11,6 @@ interface Props extends TextProps {
   tiny?: boolean;
   ellipsis?: boolean;
   large?: boolean;
-  xl?: boolean;
   xs?: boolean;
   bold?: boolean;
   color?: string;

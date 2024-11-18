@@ -7,6 +7,7 @@ import { SwitchTheme } from "./SwitchTheme";
 import { Bars3Icon, BugAntIcon } from "@heroicons/react/24/outline";
 import { FaucetButton, RainbowKitCustomConnectButton } from "~~/components/scaffold-eth";
 import { useOutsideClick } from "~~/hooks/scaffold-eth";
+import useGlobalState from "~~/services/store/globalState";
 
 type HeaderMenuLink = {
   label: string;
@@ -14,34 +15,33 @@ type HeaderMenuLink = {
   icon?: React.ReactNode;
 };
 
-export const menuLinks: HeaderMenuLink[] = [
-  {
-    label: "Dashboard",
-    href: "/dashboard",
-  },
-  {
-    label: "Create",
-    href: "/create",
-  },
-  // {
-  //   label: "Marketplace",
-  //   href: "/marketplace",
-  // },
-  // {
-  //   label: "KYC",
-  //   href: "/kyc",
-  // },
-];
-
-if (process.env.NODE_ENV === "development") {
-  menuLinks.push({
-    label: "Contracts",
-    href: "/debug",
-    icon: <BugAntIcon className="h-4 w-4" />,
-  });
-}
-
 export const HeaderMenuLinks = () => {
+  const menuLinks: HeaderMenuLink[] = [
+    {
+      label: "Create",
+      href: "/create",
+    },
+    {
+      label: "☕️ ⛰ 🚀 ",
+      href: "/dirtdao",
+    },
+  ];
+
+  if (process.env.NODE_ENV === "development") {
+    menuLinks.push({
+      label: "Contracts",
+      href: "/debug",
+      icon: <BugAntIcon className="h-4 w-4" />,
+    });
+  }
+
+  const [tokenIds] = useGlobalState("userOwnedTokenIds");
+  if (tokenIds.length > 0) {
+    menuLinks.unshift({
+      label: "Dashboard",
+      href: "/dashboard",
+    });
+  }
   const pathname = usePathname();
 
   return (

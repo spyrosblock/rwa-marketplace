@@ -1,5 +1,7 @@
 //TODO: bring over nftInterface
 // import { nftInterface } from "./store/store";
+import axios from "axios";
+import { isObject } from "lodash";
 import { formatEther } from "viem";
 import { Attribute } from "~~/types/Asset";
 
@@ -92,8 +94,7 @@ export const jsonToStringSafe = (e: any) => {
   try {
     returnString = JSON.stringify(e, (_, value) => (typeof value === "bigint" ? value.toString() : value));
   } catch (error) {
-    console.log("error converting json to string");
-    console.error(error);
+    console.error("error converting json to string", error);
   }
   return returnString;
 };
@@ -103,10 +104,21 @@ export const stringToJsonSafe = (e: any) => {
   try {
     returnJson = JSON.parse(e);
   } catch (error) {
-    console.log("error converting string to json");
-    console.error(error);
+    console.error("error converting string to json", error);
   }
   return returnJson;
+};
+
+export const getData = async (url: string) => {
+  const response = await axios.get(url).catch(error => {
+    throw "HTTP Request Error:" + error;
+  });
+  const data = response?.data;
+  if (isObject(data)) {
+    return data;
+  } else {
+    throw "Data Improperly Formatted Error:" + url;
+  }
 };
 
 export const ipfsToJsonSafe = async (url: any) => {
@@ -116,11 +128,27 @@ export const ipfsToJsonSafe = async (url: any) => {
       if (!response.ok) {
         throw new Error(`Response status: ${response.status}`);
       }
-      return await response.json();
+      const jsonData = await response.json();
+      return jsonData;
     }
-    await getData();
+    return await getData();
   } catch (error) {
     console.log("error converting ipfs url to json");
     console.error(error);
+  }
+};
+
+export const fetchNftData = async (url: string) => {
+  try {
+    return JSON.parse(url);
+  } catch (error) {
+    const response = await axios.get(url).catch(error => {
+      throw "HTTP Request for NFT Error:" + error;
+    });
+    if (isObject(response)) {
+      return response;
+    } else {
+      throw "NFT Data Improperly Formatted:" + url;
+    }
   }
 };
