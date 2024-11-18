@@ -6,7 +6,7 @@ import { getMetadata } from "~~/utils/scaffold-eth/getMetadata";
 
 export const metadata = getMetadata({
   title: "L £ G T",
-  description: "Legally Empowered Governance Tokens that enable permissionless RWA NFTs",
+  description: "Legally Empowered Governance Tokens for permissionless RWA NFT & Liquid Token minting",
 });
 
 const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
