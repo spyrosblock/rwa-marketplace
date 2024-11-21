@@ -54,14 +54,21 @@ function NFT() {
   const NftId = id || BigInt(tokensByAddress[Number(index)]).toString() || "";
 
   const { data: tokenURI } = useScaffoldReadContract({
-    contractName: "NFTFactory",
+    contractName: chainId === 7887 ? "NFTFactoryKyc" : "NFTFactory",
     functionName: "tokenURI",
     args: [BigInt(NftId)],
     ...overrideParameters,
   });
 
-  // TODO: find out why after initial loads tokenURI reverts back to undefined
+  // const { data: onChainNftData } = useScaffoldReadContract({
+  //   contractName: "NFTFactory",
+  //   functionName: "nftData",
+  //   args: [BigInt(NftId)],
+  //   ...overrideParameters,
+  // });
+  // const [,linkedTokenAddress] = onChainNftData || [];
 
+  // TODO: find out why after initial loads tokenURI reverts back to undefined - low priority
   useEffect(() => {
     if (!data && tokenURI) {
       fetchNftData(tokenURI)
@@ -88,6 +95,7 @@ function NFT() {
       <Grid h={"fit-content"} templateColumns={isLargeScreen ? "50% 1fr" : ""} gap={4} mb="4">
         <Box flex={1}>
           <img alt="NFT Image" className="rounded-lg object-cover z-0" src={data?.image} />
+          {/* <PurchaseTokenWidget depositAddress={linkedTokenAddress} className="bg-base-200 w-full mt-4" /> */}
         </Box>
         <Box w={"full"} h={"full"} pos="relative" overflow={isLargeScreen ? "hidden scroll" : ""}>
           <NFTDetails

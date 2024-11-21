@@ -28,8 +28,8 @@ export const TokenSaleWidget = () => {
   const tokenInfo: TokenPriceInfo | undefined = rawTokenInfo
     ? {
         priceInEth: rawTokenInfo[0],
-        purchaseTokens: rawTokenInfo[1].map(token => token as `0x${string}`), // Map and convert each token
-        prices: rawTokenInfo[2].map(price => BigInt(price.toString())), // Convert each price to bigint
+        purchaseTokens: rawTokenInfo[1].map((token: string) => token as `0x${string}`), // Map and convert each token
+        prices: rawTokenInfo[2].map((price: { toString: () => bigint }) => BigInt(price.toString())), // Convert each price to bigint
         canBePurchasedInFiat: rawTokenInfo[3],
         priceInFiat: rawTokenInfo[4],
       }

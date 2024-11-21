@@ -49,8 +49,10 @@ const CustomCard: React.FC<CardProps & { compact?: boolean }> = ({
         </ImageWrapper>
       )}
       <div className={`card-body ${compact && "p-5"} items-${align} flex flex-col justify-between`}>
-        {title && <h1 className={`ard-title ${compact && "font-bold"}`}>{title}</h1>}
-        {children}
+        <div>
+          {title && <h1 className={`card-title ${compact && "font-bold"}`}>{title}</h1>}
+          {children}
+        </div>
         <div className="flex flex-col justify-between">
           {footer && (
             <div className={`card-actions justify-end ${compact && "mt-4"}`}>
