@@ -22,7 +22,7 @@ export const HeaderMenuLinks = () => {
       href: "/create",
     },
     {
-      label: "☕️ ⛰ 🚀 ",
+      label: "Dirt Dao",
       href: "/dirtdao",
     },
   ];

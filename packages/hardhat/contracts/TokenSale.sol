@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract TokenSale is Ownable {
@@ -29,6 +30,8 @@ contract TokenSale is Ownable {
 		uint256 depositTokenBalance;
 		bool canBePurchasedInFiat; // Can be purchased with fiat
 		uint256 priceInFiat; // Fiat price
+		bool isNFT; // Whether this is an NFT listing
+		uint256 tokenId; // NFT token ID if this is an NFT listing
 	}
 
 	mapping(address => TokenInfo) public depositTokenInfo;
@@ -86,8 +89,8 @@ contract TokenSale is Ownable {
 		uint256 priceInEth,
 		address[] calldata acceptedTokens,
 		uint256[] calldata prices,
-		bool canBePurchasedInFiat, // New parameter
-		uint256 priceInFiat // New parameter
+		bool canBePurchasedInFiat,
+		uint256 priceInFiat
 	) external {
 		require(depositToken != address(0), "Invalid deposit token address");
 		require(amount > 0, "Amount must be greater than zero");
@@ -96,19 +99,20 @@ contract TokenSale is Ownable {
 			"Accepted tokens and prices length mismatch"
 		);
 
-		IERC20(depositToken).transferFrom(msg.sender, address(this), amount);
-
 		TokenInfo storage info = depositTokenInfo[depositToken];
 		info.depositTokenOwner = msg.sender;
 		info.priceInEth = priceInEth;
 		info.acceptedTokens = acceptedTokens;
 		info.depositTokenBalance = amount;
-		info.canBePurchasedInFiat = canBePurchasedInFiat; // Set fiat purchasable
-		info.priceInFiat = priceInFiat; // Set fiat price
+		info.canBePurchasedInFiat = canBePurchasedInFiat;
+		info.priceInFiat = priceInFiat;
+		info.isNFT = false;
 
 		for (uint256 i = 0; i < acceptedTokens.length; i++) {
 			info.acceptedTokenPrices[acceptedTokens[i]] = prices[i];
 		}
+
+		IERC20(depositToken).transferFrom(msg.sender, address(this), amount);
 
 		isDepositToken[depositToken] = true;
 		trackToken(depositToken);
@@ -116,48 +120,52 @@ contract TokenSale is Ownable {
 		emit TokenDeposited(depositToken, msg.sender, amount, priceInEth);
 	}
 
-	function replenishDepositToken(
-		address depositToken,
-		uint256 amount
+	// List NFT for sale
+	function listNFTForSale(
+		address nftContract,
+		uint256 tokenId,
+		uint256 priceInEth,
+		address[] calldata acceptedTokens,
+		uint256[] calldata prices,
+		bool canBePurchasedInFiat,
+		uint256 priceInFiat
 	) external {
-		require(isDepositToken[depositToken], "Token not allowed as deposit");
-		uint256 contractBalance = IERC20(depositToken).balanceOf(address(this));
-		require(contractBalance + amount >= contractBalance, "Overflow error");
+		require(nftContract != address(0), "Invalid NFT contract address");
+		require(
+			acceptedTokens.length == prices.length,
+			"Accepted tokens and prices length mismatch"
+		);
 
-		IERC20(depositToken).transferFrom(msg.sender, address(this), amount);
-		TokenInfo storage info = depositTokenInfo[depositToken];
-		info.depositTokenBalance += amount;
-	}
+		// Verify ownership and approval
+		require(
+			IERC721(nftContract).ownerOf(tokenId) == msg.sender,
+			"Not the NFT owner"
+		);
+		require(
+			IERC721(nftContract).getApproved(tokenId) == address(this) ||
+				IERC721(nftContract).isApprovedForAll(msg.sender, address(this)),
+			"Contract not approved for NFT transfer"
+		);
 
-	// Function to query prices for a specified deposit token
-	function getPrices(
-		address depositToken
-	)
-		external
-		view
-		returns (
-			uint256 priceInEth,
-			address[] memory purchaseTokens,
-			uint256[] memory prices,
-			bool canBePurchasedInFiat, // New return value
-			uint256 priceInFiat // New return value
-		)
-	{
-		TokenInfo storage info = depositTokenInfo[depositToken];
-		uint256 acceptedTokensCount = info.acceptedTokens.length;
+		TokenInfo storage info = depositTokenInfo[nftContract];
+		info.depositTokenOwner = msg.sender;
+		info.priceInEth = priceInEth;
+		info.acceptedTokens = acceptedTokens;
+		info.canBePurchasedInFiat = canBePurchasedInFiat;
+		info.priceInFiat = priceInFiat;
+		info.isNFT = true;
+		info.tokenId = tokenId;
 
-		purchaseTokens = new address[](acceptedTokensCount);
-		prices = new uint256[](acceptedTokensCount);
-
-		priceInEth = info.priceInEth;
-		canBePurchasedInFiat = info.canBePurchasedInFiat; // Get fiat purchasable
-		priceInFiat = info.priceInFiat; // Get fiat price
-
-		for (uint256 i = 0; i < acceptedTokensCount; i++) {
-			address token = info.acceptedTokens[i];
-			purchaseTokens[i] = token;
-			prices[i] = info.acceptedTokenPrices[token];
+		for (uint256 i = 0; i < acceptedTokens.length; i++) {
+			info.acceptedTokenPrices[acceptedTokens[i]] = prices[i];
 		}
+
+		IERC721(nftContract).transferFrom(msg.sender, address(this), tokenId);
+
+		isDepositToken[nftContract] = true;
+		trackToken(nftContract);
+
+		emit TokenDeposited(nftContract, msg.sender, 1, priceInEth);
 	}
 
 	// Update price function
@@ -165,8 +173,8 @@ contract TokenSale is Ownable {
 		address depositToken,
 		address purchaseToken,
 		uint256 newPrice,
-		bool canBePurchasedInFiat, // New parameter
-		uint256 newPriceInFiat // New parameter
+		bool canBePurchasedInFiat,
+		uint256 newPriceInFiat
 	) external {
 		TokenInfo storage info = depositTokenInfo[depositToken];
 		require(
@@ -206,8 +214,8 @@ contract TokenSale is Ownable {
 			}
 		}
 
-		info.canBePurchasedInFiat = canBePurchasedInFiat; // Update fiat purchasable
-		info.priceInFiat = newPriceInFiat; // Update fiat price
+		info.canBePurchasedInFiat = canBePurchasedInFiat;
+		info.priceInFiat = newPriceInFiat;
 
 		emit PriceUpdated(depositToken, purchaseToken, newPrice);
 	}
@@ -220,6 +228,7 @@ contract TokenSale is Ownable {
 	) public payable {
 		TokenInfo storage info = depositTokenInfo[depositToken];
 		require(isDepositToken[depositToken], "Token not for sale");
+		require(info.isNFT ? amount == 1 : amount > 0, "Invalid amount for token type");
 
 		uint256 price;
 		if (purchaseToken == address(0)) {
@@ -237,7 +246,7 @@ contract TokenSale is Ownable {
 		if (purchaseToken == address(0)) {
 			// ETH payment
 			require(msg.value == totalPrice, "Incorrect ETH amount sent");
-			ethFees += fee; // Add fee to ethFees
+			ethFees += fee;
 			info.ethBalance += netPrice;
 			info.totalSalesInEth += netPrice;
 		} else {
@@ -247,26 +256,29 @@ contract TokenSale is Ownable {
 				address(this),
 				totalPrice
 			);
-			tokenFees[purchaseToken] += fee; // Add fee to tokenFees
+			tokenFees[purchaseToken] += fee;
 			info.tokenBalance[purchaseToken] += netPrice;
 			info.totalSalesInTokens[purchaseToken] += netPrice;
-
-			// Track the token if not already tracked
 			trackToken(purchaseToken);
 		}
 
-		uint256 contractBalance = IERC20(depositToken).balanceOf(address(this));
-		require(contractBalance >= amount, "Not enough tokens in contract");
-		uint256 sendAmount = amount * 1 ether;
-		IERC20(depositToken).transfer(msg.sender, sendAmount);
-		info.depositTokenBalance -= sendAmount;
+		if (info.isNFT) {
+			IERC721(depositToken).transferFrom(address(this), msg.sender, info.tokenId);
+			isDepositToken[depositToken] = false; // Remove NFT from sale after purchase
+		} else {
+			uint256 contractBalance = IERC20(depositToken).balanceOf(address(this));
+			require(contractBalance >= amount, "Not enough tokens in contract");
+			uint256 sendAmount = amount * 1 ether;
+			IERC20(depositToken).transfer(msg.sender, sendAmount);
+			info.depositTokenBalance -= sendAmount;
+		}
 
 		emit TokenPurchased(
 			msg.sender,
 			depositToken,
 			purchaseToken,
 			netPrice,
-			sendAmount
+			amount
 		);
 	}
 
@@ -282,15 +294,21 @@ contract TokenSale is Ownable {
 		);
 		TokenInfo storage info = depositTokenInfo[depositToken];
 		require(isDepositToken[depositToken], "Token not for sale");
-		info.totalSalesInFiat += totalPrice; // Separate accumulated fiat amounts
+		info.totalSalesInFiat += totalPrice;
 
-		uint256 contractBalance = IERC20(depositToken).balanceOf(address(this));
-		require(
-			contractBalance >= amountPurchased,
-			"Not enough tokens in contract"
-		);
+		if (info.isNFT) {
+			IERC721(depositToken).transferFrom(address(this), buyer, info.tokenId);
+			isDepositToken[depositToken] = false; // Remove NFT from sale after purchase
+		} else {
+			uint256 contractBalance = IERC20(depositToken).balanceOf(address(this));
+			require(
+				contractBalance >= amountPurchased,
+				"Not enough tokens in contract"
+			);
 
-		IERC20(depositToken).transfer(buyer, amountPurchased);
+			IERC20(depositToken).transfer(buyer, amountPurchased);
+			info.depositTokenBalance -= amountPurchased;
+		}
 
 		emit FiatPurchase(buyer, depositToken, amountPurchased);
 	}
@@ -359,15 +377,19 @@ contract TokenSale is Ownable {
 		// Withdraw sales proceeds first
 		withdrawSalesProceeds(depositToken);
 
-		uint256 contractBalance = IERC20(depositToken).balanceOf(address(this));
-		if (contractBalance > 0) {
-			IERC20(depositToken).transfer(msg.sender, contractBalance);
+		if (info.isNFT) {
+			IERC721(depositToken).transferFrom(address(this), msg.sender, info.tokenId);
+		} else {
+			uint256 contractBalance = IERC20(depositToken).balanceOf(address(this));
+			if (contractBalance > 0) {
+				IERC20(depositToken).transfer(msg.sender, contractBalance);
+			}
 		}
 
 		// Remove the token from sale
 		isDepositToken[depositToken] = false;
 
-		emit DepositRemoved(depositToken, msg.sender, contractBalance);
+		emit DepositRemoved(depositToken, msg.sender, info.depositTokenBalance);
 	}
 
 	// Collect fees
