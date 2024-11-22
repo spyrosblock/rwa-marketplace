@@ -13,6 +13,7 @@ interface Props extends TextProps {
   large?: boolean;
   xs?: boolean;
   bold?: boolean;
+  block?: boolean;
   color?: string;
   htmlFor?: string;
 }
@@ -33,7 +34,7 @@ export const StyledSpan = styled.span<Props>`
       `}
 `;
 
-const ExportText: FC<Props> = ({ className = '', children, $highlight, tiny, bold, size = 'sm', ellipsis, ...props }) => {
+const ExportText: FC<Props> = ({ className = '', children, $highlight, tiny, bold, size = 'sm', ellipsis,block, ...props }) => {
   return (
     <Text
       {...props}
@@ -42,6 +43,7 @@ const ExportText: FC<Props> = ({ className = '', children, $highlight, tiny, bol
       className={`whitespace-pre-line
           ${tiny ? 'text-xs text-gray-400' : ''}
           ${bold ? 'font-bold' : ''}
+          ${block ? 'block' : ''}
           ${size ? `text-${size}` : ''}
           ${ellipsis ? ` text-ellipsis overflow-hidden ` : ''}
         ${className} `.replace(/(\r\n|\n|\r)/gm, "").trim()}

@@ -82,6 +82,36 @@ contract TokenSale is Ownable {
 		return trackedTokens;
 	}
 
+	function getPrices(
+		address depositToken
+	)
+		external
+		view
+		returns (
+			uint256 priceInEth,
+			address[] memory purchaseTokens,
+			uint256[] memory prices,
+			bool canBePurchasedInFiat, // New return value
+			uint256 priceInFiat // New return value
+		)
+	{
+		TokenInfo storage info = depositTokenInfo[depositToken];
+		uint256 acceptedTokensCount = info.acceptedTokens.length;
+
+		purchaseTokens = new address[](acceptedTokensCount);
+		prices = new uint256[](acceptedTokensCount);
+
+		priceInEth = info.priceInEth;
+		canBePurchasedInFiat = info.canBePurchasedInFiat; // Get fiat purchasable
+		priceInFiat = info.priceInFiat; // Get fiat price
+
+		for (uint256 i = 0; i < acceptedTokensCount; i++) {
+			address token = info.acceptedTokens[i];
+			purchaseTokens[i] = token;
+			prices[i] = info.acceptedTokenPrices[token];
+		}
+	}
+
 	// Deposit token function
 	function createDeposit(
 		address depositToken,

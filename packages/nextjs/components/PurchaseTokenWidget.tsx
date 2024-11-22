@@ -3,6 +3,7 @@
 import { useState } from "react";
 // import PayWithCoinbaseButton from './BuyButton';
 import { Checkbox, Flex } from "@chakra-ui/react";
+import { MaxUint256 } from "@ethersproject/constants";
 import { useAccount } from "wagmi";
 import { Button, Input, Text } from "~~/components";
 import { Address } from "~~/components/scaffold-eth";
@@ -10,20 +11,19 @@ import { useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaf
 import { format } from "~~/utils/helpers";
 import { useAllContracts } from "~~/utils/scaffold-eth/contractsData";
 
-// import { useTargetNetwork } from '~~/hooks/scaffold-eth/useTargetNetwork';
-// import { getBlockExplorerAddressLink } from '~~/utils/scaffold-eth';
-// import constants from '~~/utils/scaffold-eth/chainData';
-// import chainData from '~~/utils/scaffold-eth/chainData';
-
 /* eslint-disable @next/next/no-img-element */
 function DepositDisplay({
   depositAddress,
   chainId,
   className,
+  allowEth = true,
+  allowFiat = false,
 }: {
   depositAddress: string;
   chainId?: number;
   className?: string;
+  allowEth?: boolean;
+  allowFiat?: boolean;
 }) {
   const { address } = useAccount();
   const { TokenSale } = useAllContracts(chainId);
@@ -32,8 +32,10 @@ function DepositDisplay({
   const [priceInEth, setPriceInEth] = useState<number>(0);
   const [acceptedToken, setAcceptedToken] = useState<string>("");
   const [tokenPrice, setTokenPrice] = useState<number>(0);
-  const [allowPurchasedInFiat, setAllowPurchasedInFiat] = useState<boolean>(false);
+  const [allowPurchasedInFiat, setAllowPurchasedInFiat] = useState<boolean>(allowFiat);
   const [salePriceInFiat, setSalePriceInFiat] = useState<number>(0);
+  const [isApproving, setIsApproving] = useState<boolean>(false);
+
   //   const [selectedAmount, setSelectedAmount] = useState<number>(0);
   // const { targetNetwork } = useTargetNetwork();
   // const transferInput = useRef<HTMLInputElement>(null);
@@ -56,7 +58,9 @@ function DepositDisplay({
   //   ...overrideParameters,
   // });
 
-  const { writeContractAsync: createDeposit } = useScaffoldWriteContract("TokenSale");
+  const { writeContractAsync: TokenSaleWrite } = useScaffoldWriteContract("TokenSale");
+
+  const { writeContractAsync: ERC20Ownable } = useScaffoldWriteContract("ERC20Ownable");
 
   const depositTokenSymbol = useScaffoldReadContract({
     contractName: "ERC20Ownable",
@@ -77,10 +81,10 @@ function DepositDisplay({
     ...depositOverride,
   }).data;
 
-  const factoryOwner = useScaffoldReadContract({
-    contractName: "ERC20Factory",
-    functionName: "owner",
-  }).data;
+  // const factoryOwner = useScaffoldReadContract({
+  //   contractName: "ERC20Factory",
+  //   functionName: "owner",
+  // }).data;
 
   const depositTokenInfo_ =
     useScaffoldReadContract({
@@ -99,12 +103,13 @@ function DepositDisplay({
     }).data || [];
 
   const [
-    depositTokenOwner,
     ,
     ,
     ,
     ,
     ,
+    ,
+    // depositTokenOwner, => remove comma below when uncommented
     // priceInEth,
     // totalSalesInEth,
     // totalSalesInFiat,
@@ -117,13 +122,29 @@ function DepositDisplay({
   const [_ethPrice, purchaseTokens, purchasePrices] = prices_;
   const ethPrice = format(_ethPrice, { from18: true }) || _ethPrice;
 
-  const isDepositOwner = address === depositTokenOwner;
-  const isFactoryOwner = factoryOwner === address;
+  const depositTokenAllowance = useScaffoldReadContract({
+    contractName: "ERC20Ownable",
+    functionName: "allowance",
+    args: [address, TokenSale.address],
+    ...depositOverride,
+  }).data;
 
-  console.log("owner", isFactoryOwner, isDepositOwner);
-  console.log("prices:", prices_, depositAddress);
-  console.log("canBePurchasedInFiat:", canBePurchasedInFiat, priceInFiat);
-  console.log("depositTokenAmount:", depositTokenAmount);
+  const acceptedTokenAllowance = useScaffoldReadContract({
+    contractName: "ERC20Ownable",
+    functionName: "allowance",
+    args: [address, TokenSale.address],
+    address: acceptedToken,
+  }).data;
+
+  const hasAllowances = depositTokenAllowance > 0 && acceptedTokenAllowance > 0;
+
+  // const isDepositOwner = address === depositTokenOwner;
+  // const isFactoryOwner = factoryOwner === address;
+
+  // console.log("owner", isFactoryOwner, isDepositOwner);
+  // console.log("prices:", prices_, depositAddress);
+  // console.log("canBePurchasedInFiat:", canBePurchasedInFiat, priceInFiat);
+  // console.log("depositTokenAmount:", depositTokenAmount);
 
   return (
     <div className={`stats ${className}`}>
@@ -211,37 +232,88 @@ function DepositDisplay({
             </div>
           ) : (
             <div>
-              <Text bold className="mt-2">
+              <Text bold block className="my-4">
                 Liquid tokens for this NFT not for sale at this time, would you like to list some for sale?
               </Text>
               <div className="space-y-4">
                 <Input label="Amount" type="number" onChange={e => setListTokenAmount(Number(e.target.value))} />
-                <Input label="ETH Price" type="number" onChange={e => setPriceInEth(Number(e.target.value))} />
+                {allowEth && (
+                  <Input label="ETH Price" type="number" onChange={e => setPriceInEth(Number(e.target.value))} />
+                )}
+                {/* TODO: add option to select token to accept, like USDC etc */}
                 <Input label="Accepted Token Address" onChange={e => setAcceptedToken(e.target.value)} />
                 <Input label="Token Price" type="number" onChange={e => setTokenPrice(Number(e.target.value))} />
-                <Checkbox onChange={e => setAllowPurchasedInFiat(e.target.checked)}>Allow Fiat Purchase</Checkbox>
+                {allowFiat && (
+                  <Checkbox onChange={e => setAllowPurchasedInFiat(e.target.checked)}>Allow Fiat Purchase</Checkbox>
+                )}
                 {allowPurchasedInFiat && (
                   <Input label="Fiat Price" type="number" onChange={e => setSalePriceInFiat(Number(e.target.value))} />
                 )}
-                <Button
-                  width={"full"}
-                  isDisabled={!listTokenAmount || !priceInEth}
-                  onClick={() => {
-                    createDeposit?.({
-                      args: [
+                {depositTokenAllowance && acceptedTokenAllowance ? (
+                  <Button
+                    width={"full"}
+                    colorScheme="teal"
+                    isDisabled={!listTokenAmount || !acceptedToken || !tokenPrice}
+                    onClick={async () => {
+                      const createParams = [
                         depositAddress,
-                        BigInt(listTokenAmount),
+                        BigInt(Math.floor(listTokenAmount * 1e18)),
                         BigInt(Math.floor(priceInEth * 1e18)),
                         [acceptedToken],
-                        [BigInt(Math.floor(tokenPrice * 1e18))],
+                        [BigInt(tokenPrice)],
                         allowPurchasedInFiat,
-                        BigInt(Math.floor(salePriceInFiat * 1e18)),
-                      ],
-                    });
-                  }}
-                >
-                  Create Deposit
-                </Button>
+                        BigInt(salePriceInFiat),
+                      ];
+                      const depositResponse = await TokenSaleWrite(
+                        {
+                          functionName: "createDeposit",
+                          args: createParams,
+                        },
+                        {
+                          onBlockConfirmation: res => {
+                            console.log("block confirm", res);
+
+                            // setMintData({ ...mintData, blockNumber: res.blockNumber, transactionHash: res.transactionHash });
+                          },
+                        },
+                      );
+                      console.log("depositResponse", depositResponse);
+                    }}
+                  >
+                    Create Deposit
+                  </Button>
+                ) : (
+                  <Button
+                    colorScheme="teal"
+                    isLoading={isApproving}
+                    isDisabled={hasAllowances || !depositAddress || !acceptedToken}
+                    width={"full"}
+                    onClick={async () => {
+                      try {
+                        setIsApproving(true);
+                        console.log("depositAddress", depositAddress);
+                        console.log("acceptedToken", acceptedToken);
+                        console.log("TokenSale.address", TokenSale.address);
+                        await ERC20Ownable({
+                          functionName: "approve",
+                          address: acceptedToken,
+                          args: [TokenSale.address, MaxUint256],
+                        });
+                        await ERC20Ownable({
+                          functionName: "approve",
+                          address: depositAddress,
+                          args: [TokenSale.address, MaxUint256],
+                        });
+                      } catch (error) {
+                        console.error("Error approving tokens:", error);
+                      } finally {
+                        setIsApproving(false);
+                      }
+                    }}
+                  >
+                    {hasAllowances ? "Approved" : "Allow"}
+                  </Button>
+                )}
               </div>
             </div>
           )}
