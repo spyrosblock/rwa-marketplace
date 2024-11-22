@@ -109,7 +109,7 @@ function DepositDisplay({
     ,
     ,
     ,
-    // depositTokenOwner, => remove comma below when uncommented
+    // depositTokenOwner, => remove comma in top postion and replace with this line when uncommenting - position 0
     // priceInEth,
     // totalSalesInEth,
     // totalSalesInFiat,
