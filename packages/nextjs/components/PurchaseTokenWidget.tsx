@@ -12,7 +12,7 @@ import { format } from "~~/utils/helpers";
 import { useAllContracts } from "~~/utils/scaffold-eth/contractsData";
 
 /* eslint-disable @next/next/no-img-element */
-function DepositDisplay({
+function PurchaseTokenWidget({
   depositAddress,
   chainId,
   className,
@@ -257,12 +257,12 @@ function DepositDisplay({
                     onClick={async () => {
                       const createParams = [
                         depositAddress,
-                        BigInt(Math.floor(listTokenAmount * 1e18)),
-                        BigInt(Math.floor(priceInEth * 1e18)),
+                        format(listTokenAmount.toString(), { to18: true }), // Convert amount to proper decimals
+                        format(priceInEth.toString(), { to18: true }), // Convert ETH price to wei
                         [acceptedToken],
-                        [BigInt(tokenPrice)],
+                        [format(tokenPrice.toString(), { to18: true })], // Convert token price to proper decimals
                         allowPurchasedInFiat,
-                        BigInt(salePriceInFiat),
+                        format(salePriceInFiat.toString(), { to18: true }), // Convert fiat price to proper decimals
                       ];
                       const depositResponse = await TokenSaleWrite(
                         {
@@ -323,4 +323,4 @@ function DepositDisplay({
   );
 }
 
-export default DepositDisplay;
+export default PurchaseTokenWidget;

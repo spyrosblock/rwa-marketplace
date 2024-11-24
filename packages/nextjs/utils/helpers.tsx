@@ -13,7 +13,8 @@ export const format = (
   let formattedValue = value;
 
   if (options?.to18) {
-    formattedValue = String(formattedValue) + "000000000000000000";
+    // When converting to 18 decimals, return as string to preserve precision
+    return String(formattedValue) + "000000000000000000";
   }
 
   // 0-50 => 26.24
@@ -24,7 +25,6 @@ export const format = (
   if (options?.from18) {
     formattedValue = formatEther(BigInt(formattedValue));
   }
-  //  1 => 10000000000000000000
 
   // Add commas and $ => 1,000 || $1,000
   if (!options?.returnNumber && (formattedValue > 999 || options?.isCurrency)) {
@@ -42,9 +42,12 @@ export const format = (
       maximumFractionDigits: 6,
     }).format(Number(formattedValue));
   }
-  if (options?.returnNumber) {
+
+  // Only convert to number for small values where precision loss isn't a concern
+  if (options?.returnNumber && Number(formattedValue) < Number.MAX_SAFE_INTEGER) {
     formattedValue = Number(formattedValue);
   }
+
   return formattedValue;
 };
 
