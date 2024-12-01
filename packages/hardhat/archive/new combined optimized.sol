@@ -15,12 +15,12 @@ contract TokenSale is Ownable, ReentrancyGuard, Pausable {
     uint256 public feePercent = 3;
     mapping(address => mapping(address => uint256)) public tokenFees; // depositToken => paymentToken => fee amount
     address[] public trackedTokens;
-    address public paymentOracle;
-    address public constant FIAT_TOKEN_ADDRESS = address(1); // Special address to represent fiat payments
+    address[] public whitelistedTokens; // Tokens that can be used in the system (for deposit or purchase)
 
     struct TokenInfo {
         address depositTokenOwner;
         address[] acceptedTokens;
+        address[] whitelistedBuyers; // Addresses that can purchase this token
         mapping(address => uint256) acceptedTokenPrices;
         mapping(address => uint256) tokenBalance;
         uint256 depositTokenBalance;
@@ -44,10 +44,9 @@ contract TokenSale is Ownable, ReentrancyGuard, Pausable {
         uint256 fiatPrice
     );
     event TokenPurchased(
-        address indexed purchaser,
-        address indexed recipient,
+        address indexed buyer,
         address indexed depositToken,
-        address purchaseToken,
+        address indexed purchaseToken,
         uint256 amount,
         uint256 price
     );
@@ -56,6 +55,10 @@ contract TokenSale is Ownable, ReentrancyGuard, Pausable {
         address indexed depositToken,
         uint256 amountReceived
     );
+    event TokenWhitelisted(address indexed token);
+    event TokenRemovedFromWhitelist(address indexed token);
+    event BuyerWhitelisted(address indexed depositToken, address indexed buyer);
+    event BuyerRemovedFromWhitelist(address indexed depositToken, address indexed buyer);
     event FeeUpdated(uint256 newFee);
     event EmergencyRecovery(
         address indexed token,
@@ -68,16 +71,34 @@ contract TokenSale is Ownable, ReentrancyGuard, Pausable {
         address[] paymentTokens,
         uint256[] amounts
     );
-    event PaymentOracleUpdated(address indexed newOracle);
 
-    modifier onlyPaymentOracle() {
-        require(msg.sender == paymentOracle, "Only payment oracle");
+    modifier onlyWhitelistedToken(address token) {
+        if (whitelistedTokens.length > 0) {
+            bool isWhitelisted = false;
+            for (uint256 i = 0; i < whitelistedTokens.length; i++) {
+                if (whitelistedTokens[i] == token) {
+                    isWhitelisted = true;
+                    break;
+                }
+            }
+            require(isWhitelisted, "Token not whitelisted");
+        }
         _;
     }
 
-    constructor(address _paymentOracle) {
-        require(_paymentOracle != address(0), "Invalid payment oracle address");
-        paymentOracle = _paymentOracle;
+    modifier onlyWhitelistedBuyer(address depositToken) {
+        TokenInfo storage info = depositTokenInfo[depositToken];
+        if (info.whitelistedBuyers.length > 0) {
+            bool isWhitelisted = false;
+            for (uint256 i = 0; i < info.whitelistedBuyers.length; i++) {
+                if (info.whitelistedBuyers[i] == msg.sender) {
+                    isWhitelisted = true;
+                    break;
+                }
+            }
+            require(isWhitelisted, "Buyer not whitelisted for this token");
+        }
+        _;
     }
 
     // Getter functions for mappings
@@ -97,6 +118,27 @@ contract TokenSale is Ownable, ReentrancyGuard, Pausable {
         return depositTokenInfo[depositToken].acceptedTokens;
     }
 
+    function getWhitelistedBuyers(address depositToken) external view returns (address[] memory) {
+        return depositTokenInfo[depositToken].whitelistedBuyers;
+    }
+
+    function isTokenWhitelisted(address token) public view returns (bool) {
+        if (whitelistedTokens.length == 0) return true;
+        for (uint256 i = 0; i < whitelistedTokens.length; i++) {
+            if (whitelistedTokens[i] == token) return true;
+        }
+        return false;
+    }
+
+    function isBuyerWhitelisted(address depositToken, address buyer) public view returns (bool) {
+        TokenInfo storage info = depositTokenInfo[depositToken];
+        if (info.whitelistedBuyers.length == 0) return true;
+        for (uint256 i = 0; i < info.whitelistedBuyers.length; i++) {
+            if (info.whitelistedBuyers[i] == buyer) return true;
+        }
+        return false;
+    }
+
     // Combined deposit and update function
     function manageDeposit(
         address token,
@@ -107,7 +149,7 @@ contract TokenSale is Ownable, ReentrancyGuard, Pausable {
         uint256 fiatPrice,
         bool isNFT,
         uint256 tokenId
-    ) external virtual nonReentrant whenNotPaused {
+    ) external nonReentrant whenNotPaused onlyWhitelistedToken(token) {
         require(token != address(0), "Invalid token address");
         require(
             acceptedTokens.length == prices.length,
@@ -138,6 +180,7 @@ contract TokenSale is Ownable, ReentrancyGuard, Pausable {
 
         info.acceptedTokens = acceptedTokens;
         for (uint256 i = 0; i < acceptedTokens.length; i++) {
+            require(isTokenWhitelisted(acceptedTokens[i]), "Payment token not whitelisted");
             info.acceptedTokenPrices[acceptedTokens[i]] = prices[i];
         }
 
@@ -157,71 +200,34 @@ contract TokenSale is Ownable, ReentrancyGuard, Pausable {
         address depositToken,
         address purchaseToken,
         uint256 amount
-    ) external virtual nonReentrant whenNotPaused {
-        buyToken(depositToken, purchaseToken, msg.sender, amount);
-    }
-
-    function buyToken(
-        address depositToken,
-        address purchaseToken,
-        address recipient,
-        uint256 amount
-    ) public virtual nonReentrant whenNotPaused {
-        require(recipient != address(0), "Invalid recipient");
+    ) external nonReentrant whenNotPaused onlyWhitelistedToken(purchaseToken) onlyWhitelistedBuyer(depositToken) {
         TokenInfo storage info = depositTokenInfo[depositToken];
         require(isDepositToken[depositToken], "Token not for sale");
+        require(info.acceptedTokenPrices[purchaseToken] > 0, "Token not accepted");
 
-        // For fiat purchases, only payment oracle can process them
-        if (purchaseToken == FIAT_TOKEN_ADDRESS) {
-            require(msg.sender == paymentOracle, "Only payment oracle for fiat");
-            require(info.canBePurchasedInFiat, "Fiat not accepted");
-        } else {
-            require(info.acceptedTokenPrices[purchaseToken] > 0, "Token not accepted");
-        }
-
-        uint256 price = purchaseToken == FIAT_TOKEN_ADDRESS ? info.priceInFiat : info.acceptedTokenPrices[purchaseToken];
-        uint256 totalPrice = price * amount;
+        uint256 totalPrice = info.acceptedTokenPrices[purchaseToken] * amount;
         uint256 fee = (totalPrice * feePercent) / 100;
         uint256 netPrice = totalPrice - fee;
 
-        // Handle payment token transfer and balance updates
-        if (purchaseToken != FIAT_TOKEN_ADDRESS) {
-            IERC20(purchaseToken).safeTransferFrom(msg.sender, address(this), totalPrice);
-            tokenFees[depositToken][purchaseToken] += fee;
-            
-            // Update balances for the deposit token owner
-            if (info.depositTokenOwner != address(0)) {
-                info.tokenBalance[purchaseToken] += netPrice;
-            }
-        }
+        IERC20(purchaseToken).safeTransferFrom(msg.sender, address(this), totalPrice);
+        
+        // Track fees per deposit token and payment token pair
+        tokenFees[depositToken][purchaseToken] += fee;
+        info.tokenBalance[purchaseToken] += netPrice;
 
-        // Transfer deposit tokens to recipient
         if (info.isNFT) {
             require(amount == 1, "Invalid NFT amount");
-            IERC721(depositToken).transferFrom(address(this), recipient, info.tokenId);
+            IERC721(depositToken).transferFrom(address(this), msg.sender, info.tokenId);
             isDepositToken[depositToken] = false;
-            delete depositTokenInfo[depositToken]; // Clean up storage for NFTs
         } else {
-            require(info.depositTokenBalance >= amount, "Insufficient deposit balance");
-            IERC20(depositToken).safeTransfer(recipient, amount);
+            IERC20(depositToken).safeTransfer(msg.sender, amount);
             info.depositTokenBalance -= amount;
-            
-            // Remove deposit if balance is zero
-            if (info.depositTokenBalance == 0) {
-                isDepositToken[depositToken] = false;
-            }
         }
 
-        emit TokenPurchased(msg.sender, recipient, depositToken, purchaseToken, amount, totalPrice);
+        emit TokenPurchased(msg.sender, depositToken, purchaseToken, amount, totalPrice);
     }
 
     // Admin functions
-    function setPaymentOracle(address _paymentOracle) external onlyOwner {
-        require(_paymentOracle != address(0), "Invalid payment oracle address");
-        paymentOracle = _paymentOracle;
-        emit PaymentOracleUpdated(_paymentOracle);
-    }
-
     function setFeePercent(uint256 newFeePercent) external onlyOwner {
         require(newFeePercent <= MAX_FEE_PERCENT, "Fee too high");
         feePercent = newFeePercent;
@@ -246,6 +252,48 @@ contract TokenSale is Ownable, ReentrancyGuard, Pausable {
 
         require(hasFees, "No fees to collect");
         emit FeesCollected(depositToken, paymentTokens, amounts);
+    }
+
+    function whitelistToken(address token) external onlyOwner {
+        require(token != address(0), "Invalid token");
+        require(!isTokenWhitelisted(token), "Already whitelisted");
+        whitelistedTokens.push(token);
+        emit TokenWhitelisted(token);
+    }
+
+    function removeFromWhitelist(address token) external onlyOwner {
+        require(isTokenWhitelisted(token), "Not whitelisted");
+        for (uint256 i = 0; i < whitelistedTokens.length; i++) {
+            if (whitelistedTokens[i] == token) {
+                whitelistedTokens[i] = whitelistedTokens[whitelistedTokens.length - 1];
+                whitelistedTokens.pop();
+                emit TokenRemovedFromWhitelist(token);
+                break;
+            }
+        }
+    }
+
+    function whitelistBuyer(address depositToken, address buyer) external {
+        TokenInfo storage info = depositTokenInfo[depositToken];
+        require(info.depositTokenOwner == msg.sender, "Not owner");
+        require(!isBuyerWhitelisted(depositToken, buyer), "Already whitelisted");
+        info.whitelistedBuyers.push(buyer);
+        emit BuyerWhitelisted(depositToken, buyer);
+    }
+
+    function removeFromBuyerWhitelist(address depositToken, address buyer) external {
+        TokenInfo storage info = depositTokenInfo[depositToken];
+        require(info.depositTokenOwner == msg.sender, "Not owner");
+        require(isBuyerWhitelisted(depositToken, buyer), "Not whitelisted");
+        
+        for (uint256 i = 0; i < info.whitelistedBuyers.length; i++) {
+            if (info.whitelistedBuyers[i] == buyer) {
+                info.whitelistedBuyers[i] = info.whitelistedBuyers[info.whitelistedBuyers.length - 1];
+                info.whitelistedBuyers.pop();
+                emit BuyerRemovedFromWhitelist(depositToken, buyer);
+                break;
+            }
+        }
     }
 
     // Emergency recovery
