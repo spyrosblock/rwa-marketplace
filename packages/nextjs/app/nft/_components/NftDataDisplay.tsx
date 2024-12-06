@@ -31,12 +31,14 @@ function NFTDetails({
   isSmallScreen,
   sideAlign,
   metadata,
+  isDirectJson,
 }: {
   id: string | number;
   chainId?: number;
   isSmallScreen: boolean;
   sideAlign: boolean;
   metadata?: object;
+  isDirectJson?: boolean;
 }) {
   const { address } = useAccount();
   const { NFTFactory } = useAllContracts(chainId);
@@ -305,7 +307,7 @@ function NFTDetails({
               </>
             }
           >
-            <Metadata json={data} tokenId={id} />
+            <Metadata json={data} tokenId={id} isDirectJson />
           </Accordion>
         )}
       </Box>
@@ -353,7 +355,7 @@ function NFTDetails({
                 rightIcon={<PencilSquareIcon width="15px" />}
                 className={`join-item ${isTokenUri ? "" : "w-full"}`}
               >
-                Set URI
+                {isDirectJson ? "Set JSON" : "Set URL"}
               </Button>
             </Flex>
           </GridItem>

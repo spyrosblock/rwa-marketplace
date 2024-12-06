@@ -46,7 +46,10 @@ function PurchaseTokenWidget({
 
   const depositOverride = {
     address: depositAddress,
+    chainId
   };
+
+  console.log("🚀 ~ file: PurchaseTokenWidget.tsx:53 ~ depositOverride:", depositOverride, chainId);
 
   // const { writeAsync: writeTokenURI } = useScaffoldContractWrite({
   //   contractName: 'ERC20Factory',
@@ -68,6 +71,8 @@ function PurchaseTokenWidget({
     ...depositOverride,
   }).data;
 
+  console.log("🚀 ~ file: PurchaseTokenWidget.tsx:75 ~ depositTokenSymbol:", depositTokenSymbol, depositAddress);
+
   const depositTokenName = useScaffoldReadContract({
     contractName: "ERC20Ownable",
     functionName: "name",
@@ -77,7 +82,7 @@ function PurchaseTokenWidget({
   const depositTokenAmount = useScaffoldReadContract({
     contractName: "ERC20Ownable",
     functionName: "balanceOf",
-    args: [TokenSale.address],
+    args: [TokenSale?.address],
     ...depositOverride,
   }).data;
 
@@ -91,6 +96,7 @@ function PurchaseTokenWidget({
       contractName: "TokenSale",
       functionName: "depositTokenInfo",
       args: [depositAddress],
+      ...depositOverride,
     }).data || [];
 
   // TODO: seems redundant, just get prices from depositTokenInfo,
@@ -100,6 +106,7 @@ function PurchaseTokenWidget({
       contractName: "TokenSale",
       functionName: "getPrices",
       args: [depositAddress],
+      ...depositOverride,
     }).data || [];
 
   const [
@@ -125,14 +132,14 @@ function PurchaseTokenWidget({
   const depositTokenAllowance = useScaffoldReadContract({
     contractName: "ERC20Ownable",
     functionName: "allowance",
-    args: [address, TokenSale.address],
+    args: [address, TokenSale?.address],
     ...depositOverride,
   }).data;
 
   const acceptedTokenAllowance = useScaffoldReadContract({
     contractName: "ERC20Ownable",
     functionName: "allowance",
-    args: [address, TokenSale.address],
+    args: [address, TokenSale?.address],
     address: acceptedToken,
   }).data;
 
@@ -293,16 +300,16 @@ function PurchaseTokenWidget({
                         setIsApproving(true);
                         console.log("depositAddress", depositAddress);
                         console.log("acceptedToken", acceptedToken);
-                        console.log("TokenSale.address", TokenSale.address);
+                        console.log("TokenSale.address", TokenSale?.address);
                         await ERC20Ownable({
                           functionName: "approve",
                           address: acceptedToken,
-                          args: [TokenSale.address, MaxUint256],
+                          args: [TokenSale?.address, MaxUint256],
                         });
                         await ERC20Ownable({
                           functionName: "approve",
                           address: depositAddress,
-                          args: [TokenSale.address, MaxUint256],
+                          args: [TokenSale?.address, MaxUint256],
                         });
                       } catch (error) {
                         console.error("Error approving tokens:", error);

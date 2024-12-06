@@ -6,9 +6,8 @@ import { isObject } from "lodash";
 import styled from "styled-components";
 import { Input } from "~~/components";
 import Alert from "~~/components/Alert";
-
-// import { useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
-// import { singleUpload } from "~~/services/ipfs";
+import { useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
+import { singleUpload } from "~~/services/ipfs";
 
 const JsonViewDynamic = dynamic(() => import("@microlink/react-json-view"), {
   ssr: false,
@@ -36,44 +35,77 @@ const StyledWrapper = styled.div`
 interface Props {
   tokenId: string | number;
   json: object;
+  isDirectJson?: boolean;
 }
 
-const Metadata: FC<Props> = ({ json }) => {
+const Metadata: FC<Props> = ({ json, tokenId, isDirectJson }) => {
   const jsonElement = useRef<HTMLInputElement>(null);
   const [advanced, setAdvanced] = useState<boolean>();
-  const [isMining] = useState<boolean>();
+  const [isMining, setIsMining] = useState<boolean>();
   const [jsonEdit, setJsonEdit] = useState<boolean>();
-  const [jsonMsg] = useState<string>();
+  const [jsonMsg, setJsonMsg] = useState<string>();
   const [jsonError, setJsonError] = useState<string>();
   const [jsonData, setJsonData] = useState<any>(json);
 
-  // const { writeContractAsync: writeTokenURI } = useScaffoldWriteContract("NFTFactory");
+  const { writeContractAsync: writeToNftFacotry } = useScaffoldWriteContract("NFTFactory");
 
   const handleJsonSubmit = async () => {
-    // TODO: refactor to use data that is on-chain vs ipfs
-    // console.log("updates", jsonData);
-    // // handles both advanced and react-json-view data sources
-    // const jsonForUpdate = jsonData?.updated_src || jsonData;
-    // setIsMining(true);
-    // const d = new Date();
-    // const datestring =
-    //   d.getMonth() + 1 + "-" + d.getDate() + "-" + d.getFullYear() + " " + d.getHours() + ":" + d.getMinutes();
-    // const newUploadPath = jsonForUpdate.name + " " + datestring;
-    // const uploadHash = await singleUpload(JSON.stringify(jsonForUpdate), newUploadPath, () => {
-    //   setJsonError("Error saving to IPFS");
-    // });
-    // const blockResponse = await writeTokenURI({
-    //   functionName: "setTokenURI",
-    //   args: [tokenId, uploadHash],
-    // });
-    // console.log("block res", blockResponse);
-    // setIsMining(false);
-    // if (blockResponse) {
-    //   setJsonEdit(false);
-    //   setJsonMsg("Success 🥳 reload the page to see updates - may take a minute");
-    // } else {
-    //   setJsonError("Error saving info to token, try again");
-    // }
+    try {
+      // handles both advanced and react-json-view data sources
+      const jsonForUpdate = jsonData?.updated_src || jsonData;
+      setIsMining(true);
+
+      let tokenURIValue: string;
+      console.log("jsonForUpdate", jsonForUpdate, isDirectJson, writeToNftFacotry);
+
+      if (isDirectJson) {
+        // For direct JSON, validate and stringify the JSON
+        try {
+          // Ensure it's valid JSON by parsing and stringifying
+          tokenURIValue = JSON.stringify(jsonForUpdate);
+        } catch (error) {
+          setJsonError("Invalid JSON format");
+          setIsMining(false);
+          return;
+        }
+      } else {
+        // For IPFS URL, upload the JSON to IPFS first
+        const d = new Date();
+        const datestring =
+          d.getMonth() + 1 + "-" + d.getDate() + "-" + d.getFullYear() + " " + d.getHours() + ":" + d.getMinutes();
+        const newUploadPath = (jsonForUpdate.name || "metadata") + " " + datestring;
+
+        try {
+          tokenURIValue = await singleUpload(JSON.stringify(jsonForUpdate), newUploadPath, () => {
+            throw new Error("Error saving to IPFS");
+          });
+        } catch (error) {
+          setJsonError("Error saving to IPFS");
+          setIsMining(false);
+          return;
+        }
+      }
+
+      // Set the token URI on the contract
+      const blockResponse = await writeToNftFacotry({
+        functionName: "setTokenURI",
+        args: [tokenId, tokenURIValue],
+      });
+
+      console.log("block res", blockResponse);
+      setIsMining(false);
+
+      if (blockResponse) {
+        setJsonEdit(false);
+        setJsonMsg("Success 🥳 reload the page to see updates - may take a minute");
+      } else {
+        setJsonError("Error saving info to token, try again");
+      }
+    } catch (error) {
+      console.error("Error in handleJsonSubmit:", error);
+      setJsonError("Error saving changes. Please try again.");
+      setIsMining(false);
+    }
   };
 
   const handleJsonEdit = (json: any) => {
@@ -112,8 +144,10 @@ const Metadata: FC<Props> = ({ json }) => {
       setJsonError("");
     }
   };
+
   return (
-    <div className={`${isMining ? "faded pointer-events-none" : ""}`}>
+    // stop propagation to avoid closing the accordion that this is housed in on the nft page
+    <div className={`${isMining ? "faded pointer-events-none" : ""}`} onClick={e => e.stopPropagation()}>
       <span className="text-xs leading-5 text-gray-400 flex justify-center mb-6">
         ⚠️ this is an&nbsp;<span onClick={() => setAdvanced(!advanced)}>advanced feature</span> - edit at your own risk
         ⚠️
