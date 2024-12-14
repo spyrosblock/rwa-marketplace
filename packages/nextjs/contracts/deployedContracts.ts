@@ -3232,15 +3232,10 @@ const deployedContracts = {
       },
     },
     TokenSale: {
-      address: "0x2c4D63d1cbB80EFadD18213e56F1A7CA343091BF",
+      address: "0xb91B8cf43E4a0e28f0ba31a6B5e1Ff5D458D608E",
       abi: [
         {
           inputs: [
-            {
-              internalType: "address",
-              name: "initialOwner",
-              type: "address",
-            },
             {
               internalType: "address",
               name: "_paymentOracle",
@@ -3255,8 +3250,27 @@ const deployedContracts = {
           inputs: [
             {
               indexed: true,
+              internalType: "string",
+              name: "updateType",
+              type: "string",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "value",
+              type: "uint256",
+            },
+          ],
+          name: "ConfigUpdate",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
               internalType: "address",
-              name: "depositToken",
+              name: "token",
               type: "address",
             },
             {
@@ -3268,46 +3282,82 @@ const deployedContracts = {
             {
               indexed: false,
               internalType: "uint256",
-              name: "remainingAmount",
-              type: "uint256",
-            },
-          ],
-          name: "DepositRemoved",
-          type: "event",
-        },
-        {
-          anonymous: false,
-          inputs: [
-            {
-              indexed: false,
-              internalType: "uint256",
-              name: "newFeePercent",
-              type: "uint256",
-            },
-          ],
-          name: "FeeUpdated",
-          type: "event",
-        },
-        {
-          anonymous: false,
-          inputs: [
-            {
-              indexed: false,
-              internalType: "uint256",
-              name: "ethAmount",
+              name: "amount",
               type: "uint256",
             },
             {
               indexed: false,
               internalType: "address[]",
-              name: "tokenAddresses",
+              name: "acceptedTokens",
               type: "address[]",
             },
             {
               indexed: false,
-              internalType: "uint256[]",
-              name: "tokenAmounts",
-              type: "uint256[]",
+              internalType: "bool",
+              name: "fiatEnabled",
+              type: "bool",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "fiatPrice",
+              type: "uint256",
+            },
+          ],
+          name: "DepositUpdated",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "address",
+              name: "token",
+              type: "address",
+            },
+            {
+              indexed: true,
+              internalType: "address",
+              name: "recipient",
+              type: "address",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "amount",
+              type: "uint256",
+            },
+            {
+              indexed: false,
+              internalType: "bool",
+              name: "isNFT",
+              type: "bool",
+            },
+          ],
+          name: "EmergencyRecovery",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "address",
+              name: "depositToken",
+              type: "address",
+            },
+            {
+              indexed: true,
+              internalType: "address",
+              name: "paymentToken",
+              type: "address",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "amount",
+              type: "uint256",
             },
           ],
           name: "FeesCollected",
@@ -3361,25 +3411,13 @@ const deployedContracts = {
           anonymous: false,
           inputs: [
             {
-              indexed: true,
-              internalType: "address",
-              name: "depositToken",
-              type: "address",
-            },
-            {
-              indexed: true,
-              internalType: "address",
-              name: "purchaseToken",
-              type: "address",
-            },
-            {
               indexed: false,
-              internalType: "uint256",
-              name: "newPrice",
-              type: "uint256",
+              internalType: "address",
+              name: "account",
+              type: "address",
             },
           ],
-          name: "PriceUpdated",
+          name: "Paused",
           type: "event",
         },
         {
@@ -3394,69 +3432,7 @@ const deployedContracts = {
             {
               indexed: true,
               internalType: "address",
-              name: "owner",
-              type: "address",
-            },
-            {
-              indexed: false,
-              internalType: "uint256",
-              name: "amount",
-              type: "uint256",
-            },
-            {
-              indexed: false,
-              internalType: "uint256",
-              name: "priceInEth",
-              type: "uint256",
-            },
-          ],
-          name: "TokenDeposited",
-          type: "event",
-        },
-        {
-          anonymous: false,
-          inputs: [
-            {
-              indexed: true,
-              internalType: "address",
-              name: "buyer",
-              type: "address",
-            },
-            {
-              indexed: true,
-              internalType: "address",
-              name: "depositToken",
-              type: "address",
-            },
-            {
-              indexed: true,
-              internalType: "address",
-              name: "purchaseToken",
-              type: "address",
-            },
-            {
-              indexed: false,
-              internalType: "uint256",
-              name: "amountPaid",
-              type: "uint256",
-            },
-            {
-              indexed: false,
-              internalType: "uint256",
-              name: "amountReceived",
-              type: "uint256",
-            },
-          ],
-          name: "TokenPurchased",
-          type: "event",
-        },
-        {
-          anonymous: false,
-          inputs: [
-            {
-              indexed: true,
-              internalType: "address",
-              name: "depositToken",
+              name: "paymentToken",
               type: "address",
             },
             {
@@ -3472,35 +3448,127 @@ const deployedContracts = {
               type: "uint256",
             },
           ],
-          name: "TokensWithdrawn",
+          name: "ProceedsWithdrawn",
           type: "event",
         },
         {
+          anonymous: false,
           inputs: [
             {
+              indexed: true,
+              internalType: "address",
+              name: "purchaser",
+              type: "address",
+            },
+            {
+              indexed: true,
               internalType: "address",
               name: "depositToken",
               type: "address",
             },
             {
+              indexed: false,
               internalType: "address",
               name: "purchaseToken",
               type: "address",
             },
             {
+              indexed: false,
               internalType: "uint256",
               name: "amount",
               type: "uint256",
             },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "price",
+              type: "uint256",
+            },
+            {
+              indexed: false,
+              internalType: "bool",
+              name: "isFiat",
+              type: "bool",
+            },
           ],
-          name: "buyToken",
-          outputs: [],
-          stateMutability: "payable",
+          name: "TokenTransaction",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: false,
+              internalType: "address",
+              name: "account",
+              type: "address",
+            },
+          ],
+          name: "Unpaused",
+          type: "event",
+        },
+        {
+          inputs: [],
+          name: "FIAT_TOKEN_ADDRESS",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
           type: "function",
         },
         {
           inputs: [],
-          name: "collectFees",
+          name: "MAX_FEE_PERCENT",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "depositToken",
+              type: "address",
+            },
+            {
+              components: [
+                {
+                  internalType: "address",
+                  name: "purchaseToken",
+                  type: "address",
+                },
+                {
+                  internalType: "address",
+                  name: "recipient",
+                  type: "address",
+                },
+                {
+                  internalType: "uint256",
+                  name: "amount",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "tokenId",
+                  type: "uint256",
+                },
+              ],
+              internalType: "struct TokenSale.PurchaseParams",
+              name: "params",
+              type: "tuple",
+            },
+          ],
+          name: "buyToken",
           outputs: [],
           stateMutability: "nonpayable",
           type: "function",
@@ -3513,37 +3581,12 @@ const deployedContracts = {
               type: "address",
             },
             {
-              internalType: "uint256",
-              name: "amount",
-              type: "uint256",
-            },
-            {
-              internalType: "uint256",
-              name: "priceInEth",
-              type: "uint256",
-            },
-            {
-              internalType: "address[]",
-              name: "acceptedTokens",
-              type: "address[]",
-            },
-            {
-              internalType: "uint256[]",
-              name: "prices",
-              type: "uint256[]",
-            },
-            {
-              internalType: "bool",
-              name: "canBePurchasedInFiat",
-              type: "bool",
-            },
-            {
-              internalType: "uint256",
-              name: "priceInFiat",
-              type: "uint256",
+              internalType: "address",
+              name: "paymentToken",
+              type: "address",
             },
           ],
-          name: "createDeposit",
+          name: "collectFees",
           outputs: [],
           stateMutability: "nonpayable",
           type: "function",
@@ -3565,26 +3608,6 @@ const deployedContracts = {
             },
             {
               internalType: "uint256",
-              name: "priceInEth",
-              type: "uint256",
-            },
-            {
-              internalType: "uint256",
-              name: "totalSalesInEth",
-              type: "uint256",
-            },
-            {
-              internalType: "uint256",
-              name: "totalSalesInFiat",
-              type: "uint256",
-            },
-            {
-              internalType: "uint256",
-              name: "ethBalance",
-              type: "uint256",
-            },
-            {
-              internalType: "uint256",
               name: "depositTokenBalance",
               type: "uint256",
             },
@@ -3599,13 +3622,28 @@ const deployedContracts = {
               type: "uint256",
             },
             {
+              internalType: "uint256",
+              name: "priceIncreaseAmount",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "priceIncreaseType",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "totalTokensPurchased",
+              type: "uint256",
+            },
+            {
               internalType: "bool",
               name: "isNFT",
               type: "bool",
             },
             {
               internalType: "uint256",
-              name: "tokenId",
+              name: "lastUpdateTime",
               type: "uint256",
             },
           ],
@@ -3613,16 +3651,31 @@ const deployedContracts = {
           type: "function",
         },
         {
-          inputs: [],
-          name: "ethFees",
-          outputs: [
+          inputs: [
+            {
+              internalType: "address",
+              name: "token",
+              type: "address",
+            },
             {
               internalType: "uint256",
-              name: "",
+              name: "tokenId",
               type: "uint256",
             },
+            {
+              internalType: "uint256",
+              name: "amount",
+              type: "uint256",
+            },
+            {
+              internalType: "address",
+              name: "recipient",
+              type: "address",
+            },
           ],
-          stateMutability: "view",
+          name: "emergencyRecover",
+          outputs: [],
+          stateMutability: "nonpayable",
           type: "function",
         },
         {
@@ -3647,33 +3700,16 @@ const deployedContracts = {
             },
             {
               internalType: "address",
-              name: "buyer",
+              name: "purchaseToken",
               type: "address",
             },
-            {
-              internalType: "uint256",
-              name: "amountPurchased",
-              type: "uint256",
-            },
-            {
-              internalType: "uint256",
-              name: "totalPrice",
-              type: "uint256",
-            },
           ],
-          name: "fiatPurchase",
-          outputs: [],
-          stateMutability: "nonpayable",
-          type: "function",
-        },
-        {
-          inputs: [],
-          name: "getAllTokens",
+          name: "getCurrentPrice",
           outputs: [
             {
-              internalType: "address[]",
+              internalType: "uint256",
               name: "",
-              type: "address[]",
+              type: "uint256",
             },
           ],
           stateMutability: "view",
@@ -3702,41 +3738,63 @@ const deployedContracts = {
           inputs: [
             {
               internalType: "address",
-              name: "nftContract",
+              name: "token",
               type: "address",
             },
             {
-              internalType: "uint256",
-              name: "tokenId",
-              type: "uint256",
-            },
-            {
-              internalType: "uint256",
-              name: "priceInEth",
-              type: "uint256",
-            },
-            {
-              internalType: "address[]",
-              name: "acceptedTokens",
-              type: "address[]",
-            },
-            {
-              internalType: "uint256[]",
-              name: "prices",
-              type: "uint256[]",
-            },
-            {
-              internalType: "bool",
-              name: "canBePurchasedInFiat",
-              type: "bool",
-            },
-            {
-              internalType: "uint256",
-              name: "priceInFiat",
-              type: "uint256",
+              components: [
+                {
+                  internalType: "bool",
+                  name: "isNFT",
+                  type: "bool",
+                },
+                {
+                  internalType: "uint256",
+                  name: "amount",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "tokenId",
+                  type: "uint256",
+                },
+                {
+                  internalType: "address[]",
+                  name: "acceptedTokens",
+                  type: "address[]",
+                },
+                {
+                  internalType: "uint256[]",
+                  name: "prices",
+                  type: "uint256[]",
+                },
+                {
+                  internalType: "bool",
+                  name: "enableFiat",
+                  type: "bool",
+                },
+                {
+                  internalType: "uint256",
+                  name: "fiatPrice",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "priceIncreaseAmount",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "priceIncreaseType",
+                  type: "uint256",
+                },
+              ],
+              internalType: "struct TokenSale.DepositParams",
+              name: "params",
+              type: "tuple",
             },
           ],
-          name: "listNFTForSale",
+          name: "manageDeposit",
           outputs: [],
           stateMutability: "nonpayable",
           type: "function",
@@ -3756,6 +3814,19 @@ const deployedContracts = {
         },
         {
           inputs: [],
+          name: "paused",
+          outputs: [
+            {
+              internalType: "bool",
+              name: "",
+              type: "bool",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
           name: "paymentOracle",
           outputs: [
             {
@@ -3768,19 +3839,6 @@ const deployedContracts = {
           type: "function",
         },
         {
-          inputs: [
-            {
-              internalType: "address",
-              name: "depositToken",
-              type: "address",
-            },
-          ],
-          name: "removeDeposit",
-          outputs: [],
-          stateMutability: "nonpayable",
-          type: "function",
-        },
-        {
           inputs: [],
           name: "renounceOwnership",
           outputs: [],
@@ -3790,8 +3848,32 @@ const deployedContracts = {
         {
           inputs: [
             {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          name: "salesProceeds",
+          outputs: [
+            {
               internalType: "uint256",
-              name: "newFeePercent",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "_feePercent",
               type: "uint256",
             },
           ],
@@ -3804,7 +3886,7 @@ const deployedContracts = {
           inputs: [
             {
               internalType: "address",
-              name: "newOracle",
+              name: "_oracle",
               type: "address",
             },
           ],
@@ -3815,6 +3897,11 @@ const deployedContracts = {
         },
         {
           inputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
             {
               internalType: "address",
               name: "",
@@ -3873,39 +3960,11 @@ const deployedContracts = {
             },
             {
               internalType: "address",
-              name: "purchaseToken",
-              type: "address",
-            },
-            {
-              internalType: "uint256",
-              name: "newPrice",
-              type: "uint256",
-            },
-            {
-              internalType: "bool",
-              name: "canBePurchasedInFiat",
-              type: "bool",
-            },
-            {
-              internalType: "uint256",
-              name: "newPriceInFiat",
-              type: "uint256",
-            },
-          ],
-          name: "updatePrice",
-          outputs: [],
-          stateMutability: "nonpayable",
-          type: "function",
-        },
-        {
-          inputs: [
-            {
-              internalType: "address",
-              name: "depositToken",
+              name: "paymentToken",
               type: "address",
             },
           ],
-          name: "withdrawSalesProceeds",
+          name: "withdrawProceeds",
           outputs: [],
           stateMutability: "nonpayable",
           type: "function",
@@ -3915,6 +3974,7 @@ const deployedContracts = {
         owner: "@openzeppelin/contracts/access/Ownable.sol",
         renounceOwnership: "@openzeppelin/contracts/access/Ownable.sol",
         transferOwnership: "@openzeppelin/contracts/access/Ownable.sol",
+        paused: "@openzeppelin/contracts/security/Pausable.sol",
       },
     },
   },

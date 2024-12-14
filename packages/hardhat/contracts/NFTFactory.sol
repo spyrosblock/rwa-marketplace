@@ -58,8 +58,8 @@ contract NFTFactory is ERC721URIStorage, Ownable, Pausable {
 		require(!onlyOwnerCanMint || msg.sender == owner(), "Minting is restricted to the owner");
 
 		// increment id & mint
-		uint256 tokenId = _tokenIdCounter.current();
 		_tokenIdCounter.increment();
+		uint256 tokenId = _tokenIdCounter.current();
 		_safeMint(to, tokenId);
 		_setTokenURI(tokenId, tokenURI);
 
@@ -105,16 +105,6 @@ contract NFTFactory is ERC721URIStorage, Ownable, Pausable {
 
 		emit TokenMinted(tokenId, linkedTokenAddress);
 		return tokenId;
-	}
-
-	function setTokenURI(uint256 tokenId, string memory newTokenURI) public {
-		require(_exists(tokenId), "NFT does not exist");
-		require(msg.sender == owner() || msg.sender == ownerOf(tokenId), "Caller is not the owner or NFT owner");
-		require(!nftData[tokenId].locked, "Token metadata is locked");
-		require(!nftData[tokenId].paused, "Token is paused");
-
-		_setTokenURI(tokenId, newTokenURI);
-		emit TokenURIUpdated(tokenId, newTokenURI);
 	}
 
 	// Callable by both owner and individual NFT holder

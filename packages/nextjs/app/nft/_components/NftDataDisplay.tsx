@@ -254,7 +254,7 @@ function NFTDetails({
     <Box p={4} pb={sideAlign ? 4 : 12} className="bg-base-200" rounded={"lg"}>
       <div className={`flex flex-col justify-center mb-4 text-left`}>
         <Text size="lg" bold mb={1}>
-          {"Metadata"}
+          {"Description"}
         </Text>
         <Text noOfLines={lineClamp ? 6 : undefined} onClick={toggleLineClamp} mb={4}>
           {data?.description}

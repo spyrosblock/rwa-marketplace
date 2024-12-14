@@ -16,20 +16,19 @@ function PurchaseTokenWidget({
   depositAddress,
   chainId,
   className,
-  allowEth = true,
   allowFiat = false,
+  hidden = false,
 }: {
   depositAddress: string;
   chainId?: number;
   className?: string;
-  allowEth?: boolean;
   allowFiat?: boolean;
+  hidden?: boolean;
 }) {
   const { address } = useAccount();
   const { TokenSale } = useAllContracts(chainId);
   const [selectedCheckbox, setCheckbox] = useState<string>();
   const [listTokenAmount, setListTokenAmount] = useState<number>(0);
-  const [priceInEth, setPriceInEth] = useState<number>(0);
   const [acceptedToken, setAcceptedToken] = useState<string>("");
   const [tokenPrice, setTokenPrice] = useState<number>(0);
   const [allowPurchasedInFiat, setAllowPurchasedInFiat] = useState<boolean>(allowFiat);
@@ -70,8 +69,6 @@ function PurchaseTokenWidget({
     functionName: "symbol",
     ...depositOverride,
   }).data;
-
-  console.log("🚀 ~ file: PurchaseTokenWidget.tsx:75 ~ depositTokenSymbol:", depositTokenSymbol, depositAddress);
 
   const depositTokenName = useScaffoldReadContract({
     contractName: "ERC20Ownable",
@@ -152,7 +149,7 @@ function PurchaseTokenWidget({
   // console.log("prices:", prices_, depositAddress);
   // console.log("canBePurchasedInFiat:", canBePurchasedInFiat, priceInFiat);
   // console.log("depositTokenAmount:", depositTokenAmount);
-
+  if (hidden) return null;
   return (
     <div className={`stats ${className}`}>
       <div className="stat inline">
@@ -244,9 +241,6 @@ function PurchaseTokenWidget({
               </Text>
               <div className="space-y-4">
                 <Input label="Amount" type="number" onChange={e => setListTokenAmount(Number(e.target.value))} />
-                {allowEth && (
-                  <Input label="ETH Price" type="number" onChange={e => setPriceInEth(Number(e.target.value))} />
-                )}
                 {/* TODO: add option to select token to accept, like USDC etc */}
                 <Input label="Accepted Token Address" onChange={e => setAcceptedToken(e.target.value)} />
                 <Input label="Token Price" type="number" onChange={e => setTokenPrice(Number(e.target.value))} />
@@ -264,16 +258,21 @@ function PurchaseTokenWidget({
                     onClick={async () => {
                       const createParams = [
                         depositAddress,
-                        format(listTokenAmount.toString(), { to18: true }), // Convert amount to proper decimals
-                        format(priceInEth.toString(), { to18: true }), // Convert ETH price to wei
-                        [acceptedToken],
-                        [format(tokenPrice.toString(), { to18: true })], // Convert token price to proper decimals
-                        allowPurchasedInFiat,
-                        format(salePriceInFiat.toString(), { to18: true }), // Convert fiat price to proper decimals
+                        {
+                          isNFT: false,
+                          amount: format(listTokenAmount.toString(), { to18: true }),
+                          tokenId: 0,
+                          acceptedTokens: [acceptedToken],
+                          acceptedTokenPrices: [format(tokenPrice.toString(), { to18: true })],
+                          allowPurchasedInFiat,
+                          fiatPrice: format(salePriceInFiat.toString(), { to18: true }),
+                          priceIncreaseAmount: 0,
+                          priceIncreaseType: 0,
+                        },
                       ];
                       const depositResponse = await TokenSaleWrite(
                         {
-                          functionName: "createDeposit",
+                          functionName: "manageDeposit",
                           args: createParams,
                         },
                         {

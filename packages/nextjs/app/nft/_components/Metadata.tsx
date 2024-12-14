@@ -88,8 +88,8 @@ const Metadata: FC<Props> = ({ json, tokenId, isDirectJson }) => {
 
       // Set the token URI on the contract
       const blockResponse = await writeToNftFacotry({
-        functionName: "setTokenURI",
-        args: [tokenId, tokenURIValue],
+        functionName: "updateNFT",
+        args: [tokenId, "", tokenURIValue],
       });
 
       console.log("block res", blockResponse);

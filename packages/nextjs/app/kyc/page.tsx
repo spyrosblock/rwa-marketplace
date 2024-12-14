@@ -95,7 +95,6 @@ const KintoConnect = () => {
         [100000000000000000000],
       ],
     });
-    console.log("data:", data);
     setLoading(true);
     try {
       const response = await kintoSDK.sendTransaction([

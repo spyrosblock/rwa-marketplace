@@ -8,7 +8,7 @@ import { Box, Grid } from "@chakra-ui/react";
 import resolveConfig from "tailwindcss/resolveConfig";
 import { useAccount } from "wagmi";
 import { DocumentIcon } from "@heroicons/react/24/outline";
-import { Accordion, PageWrapper, Text } from "~~/components";
+import { Accordion, PageWrapper, PurchaseTokenWidget, Text } from "~~/components";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
 import useGlobalState from "~~/services/store/globalState";
 import { content, theme as tailwindTheme } from "~~/tailwind.config";
@@ -45,8 +45,6 @@ function NFT() {
   }
   : {};
 
-  console.log("abi", NFTFactory.abi);
-
   const { data: tokensByAddress = [] } = useScaffoldReadContract({
     contractName: "NFTFactory",
     functionName: "getTokensByAddress",
@@ -54,7 +52,7 @@ function NFT() {
     ...overrideParameters,
   });
 
-  const NftId = id || BigInt(tokensByAddress[Number(index)]).toString() || "";
+  const NftId = id || BigInt(tokensByAddress[Number(index)] as string).toString() || "";
 
   const { data: tokenURI } = useScaffoldReadContract({
     contractName: chainId === 7887 ? "NFTFactoryKyc" : "NFTFactory",
@@ -63,19 +61,17 @@ function NFT() {
     ...overrideParameters,
   });
 
-  // const { data: onChainNftData } = useScaffoldReadContract({
-  //   contractName: "NFTFactory",
-  //   functionName: "nftData",
-  //   args: [BigInt(NftId)],
-  //   ...overrideParameters,
-  // });
-  // const [, linkedTokenAddress] = onChainNftData || [];
+  const { data: onChainNftData } = useScaffoldReadContract({
+    contractName: "NFTFactory",
+    functionName: "nftData",
+    args: [BigInt(NftId)],
+    ...overrideParameters,
+  });
+  const [, linkedTokenAddress] = onChainNftData || [];
 
   // TODO: find out why after initial loads tokenURI reverts back to undefined - low priority
   useEffect(() => {
-    console.log("data", data, tokenURI);
     if (!data && tokenURI) {
-      console.log("fetching");
       try {
         // First try to parse as JSON
         const parsedData = JSON.parse(tokenURI);
@@ -113,12 +109,12 @@ function NFT() {
       <Grid h={"fit-content"} templateColumns={isLargeScreen ? "50% 1fr" : ""} gap={4} mb="4">
         <Box flex={1}>
           <img alt="NFT Image" className="rounded-lg object-cover z-0" src={data?.image} />
-          {/* <PurchaseTokenWidget
+          <PurchaseTokenWidget
             depositAddress={linkedTokenAddress}
-            allowEth={false}
             chainId={chainId}
             className="bg-base-200 w-full mt-4"
-          /> */}
+            hidden={true}
+          />
         </Box>
         <Box w={"full"} h={"full"} pos="relative" overflow={isLargeScreen ? "hidden scroll" : ""}>
           <NFTDetails
