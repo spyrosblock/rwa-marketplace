@@ -1,9 +1,0 @@
-The BaseTokenSale contract should not accept eth, and only accept what a user defines as accepted tokens and their respective amounts.  Also an admin function to withdraw stuck tokens.
-
-Much of the logic of depositERC20 and depositNFT functions are the same, so we should combine them into a single function.  Also the user needs a way to update their deposit, either by changing prices, depositing more tokens, or adding more accepted tokens etc.  If possible add this to the same function.
-
-I like that we break up contract logic into seperate files.  Let's keep with that pattern, but combine both the fee and fiat functionality into a single file I will reference as the FiatFeeOracle.  This means the buyToken function in BaseTokenSale contract will need a way to know if it is a fiat purchase or a token purchase and the fee logic will need to be taken into account in the FiatFeeOracle contract and applied before calling the buyToken function.
-
-The whitelist functionality found in the first contract should be added to the FiatFeeOracle contract as well.
-
-Please output these two contracts
