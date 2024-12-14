@@ -11,268 +11,139 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 contract TokenSale is Ownable, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
 
-    uint256 public constant MAX_FEE_PERCENT = 20;
-    uint256 public feePercent = 3;
-    mapping(address => mapping(address => uint256)) public tokenFees; // depositToken => paymentToken => fee amount
-    address[] public trackedTokens;
-    address public paymentOracle;
-    address public constant FIAT_TOKEN_ADDRESS = address(1); // Special address to represent fiat payments
-
+    // Compact struct to store token sale information
     struct TokenInfo {
-        address depositTokenOwner;
+        address owner;
         address[] acceptedTokens;
-        mapping(address => uint256) acceptedTokenPrices;
-        mapping(address => uint256) tokenBalance;
-        uint256 depositTokenBalance;
-        bool canBePurchasedInFiat;
-        uint256 priceInFiat;
+        mapping(address => uint256) prices;
+        uint256 balance;
         bool isNFT;
         uint256 tokenId;
-        uint256 lastUpdateTime;
+        uint256 priceIncreaseAmount;
+        uint256 priceIncreaseType;
+        uint256 totalPurchased;
     }
 
-    mapping(address => TokenInfo) public depositTokenInfo;
-    mapping(address => bool) public isDepositToken;
+    // Consolidated mappings
+    mapping(address => TokenInfo) public tokens;
+    mapping(address => mapping(address => uint256)) public fees;
 
-    event DepositUpdated(
-        address indexed token,
-        address indexed owner,
-        uint256 amount,
-        address[] acceptedTokens,
-        uint256[] prices,
-        bool fiatEnabled,
-        uint256 fiatPrice
-    );
+    // Simplified constants and state variables
+    uint256 public constant MAX_FEE = 20;
+    uint256 public feePercent = 3;
+    address public paymentOracle;
+    address public constant FIAT_TOKEN = address(1);
+
+    // Condensed events
     event TokenPurchased(
-        address indexed purchaser,
-        address indexed recipient,
-        address indexed depositToken,
-        address purchaseToken,
-        uint256 amount,
+        address indexed buyer, 
+        address indexed token, 
+        uint256 amount, 
         uint256 price
     );
-    event FiatPurchase(
-        address indexed buyer,
-        address indexed depositToken,
-        uint256 amountReceived
-    );
-    event FeeUpdated(uint256 newFee);
-    event EmergencyRecovery(
-        address indexed token,
-        address indexed recipient,
-        uint256 amount,
-        bool isNFT
-    );
-    event FeesCollected(
-        address indexed depositToken,
-        address[] paymentTokens,
-        uint256[] amounts
-    );
-    event PaymentOracleUpdated(address indexed newOracle);
 
-    modifier onlyPaymentOracle() {
-        require(msg.sender == paymentOracle, "Only payment oracle");
-        _;
-    }
-
+    // Constructor
     constructor(address _paymentOracle) {
-        require(_paymentOracle != address(0), "Invalid payment oracle address");
+        require(_paymentOracle != address(0), "Invalid oracle");
         paymentOracle = _paymentOracle;
     }
 
-    // Getter functions for mappings
-    function getAcceptedTokenPrice(address depositToken, address acceptedToken) external view returns (uint256) {
-        return depositTokenInfo[depositToken].acceptedTokenPrices[acceptedToken];
-    }
-
-    function getTokenBalance(address depositToken, address paymentToken) external view returns (uint256) {
-        return depositTokenInfo[depositToken].tokenBalance[paymentToken];
-    }
-
-    function getTokenFees(address depositToken, address paymentToken) external view returns (uint256) {
-        return tokenFees[depositToken][paymentToken];
-    }
-
-    function getAcceptedTokens(address depositToken) external view returns (address[] memory) {
-        return depositTokenInfo[depositToken].acceptedTokens;
-    }
-
-    // Combined deposit and update function
-    function manageDeposit(
+    // Unified deposit and update function
+    function manageToken(
         address token,
         uint256 amount,
         address[] calldata acceptedTokens,
         uint256[] calldata prices,
-        bool enableFiat,
-        uint256 fiatPrice,
         bool isNFT,
-        uint256 tokenId
-    ) external virtual nonReentrant whenNotPaused {
-        require(token != address(0), "Invalid token address");
-        require(
-            acceptedTokens.length == prices.length,
-            "Arrays length mismatch"
-        );
-        require(acceptedTokens.length > 0, "No accepted tokens");
-
-        TokenInfo storage info = depositTokenInfo[token];
-        bool isUpdate = isDepositToken[token];
-
-        if (!isUpdate) {
-            info.depositTokenOwner = msg.sender;
-            info.isNFT = isNFT;
+        uint256 tokenId,
+        uint256 priceIncreaseAmount,
+        uint256 priceIncreaseType
+    ) external nonReentrant whenNotPaused {
+        TokenInfo storage info = tokens[token];
+        
+        // Initial setup or update check
+        require(info.owner == address(0) || info.owner == msg.sender, "Unauthorized");
+        
+        // Token transfer logic
+        if (isNFT) {
+            require(amount == 1 && tokenId > 0, "Invalid NFT");
+            IERC721(token).transferFrom(msg.sender, address(this), tokenId);
+            info.tokenId = tokenId;
         } else {
-            require(info.depositTokenOwner == msg.sender, "Not owner");
+            IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+            info.balance += amount;
         }
 
-        if (amount > 0) {
-            if (isNFT) {
-                require(amount == 1 && tokenId > 0, "Invalid NFT params");
-                IERC721(token).transferFrom(msg.sender, address(this), tokenId);
-                info.tokenId = tokenId;
-            } else {
-                IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-                info.depositTokenBalance += amount;
-            }
-        }
-
+        // Update token information
+        info.owner = msg.sender;
+        info.isNFT = isNFT;
         info.acceptedTokens = acceptedTokens;
+        info.priceIncreaseAmount = priceIncreaseAmount;
+        info.priceIncreaseType = priceIncreaseType;
+        
+        // Set prices for accepted tokens
         for (uint256 i = 0; i < acceptedTokens.length; i++) {
-            info.acceptedTokenPrices[acceptedTokens[i]] = prices[i];
+            info.prices[acceptedTokens[i]] = prices[i];
         }
-
-        info.canBePurchasedInFiat = enableFiat;
-        info.priceInFiat = fiatPrice;
-        info.lastUpdateTime = block.timestamp;
-
-        if (!isUpdate) {
-            isDepositToken[token] = true;
-            trackToken(token);
-        }
-
-        emit DepositUpdated(token, msg.sender, amount, acceptedTokens, prices, enableFiat, fiatPrice);
     }
 
-    function buyToken(
-        address depositToken,
-        address purchaseToken,
-        uint256 amount
-    ) external virtual nonReentrant whenNotPaused {
-        buyToken(depositToken, purchaseToken, msg.sender, amount);
-    }
-
+    // Unified buy function with price increase mechanism
     function buyToken(
         address depositToken,
         address purchaseToken,
         address recipient,
-        uint256 amount
-    ) public virtual nonReentrant whenNotPaused {
-        require(recipient != address(0), "Invalid recipient");
-        TokenInfo storage info = depositTokenInfo[depositToken];
-        require(isDepositToken[depositToken], "Token not for sale");
+        uint256 amount,
+        uint256 tokenId
+    ) external nonReentrant whenNotPaused {
+        TokenInfo storage info = tokens[depositToken];
+        recipient = recipient == address(0) ? msg.sender : recipient;
 
-        // For fiat purchases, only payment oracle can process them
-        if (purchaseToken == FIAT_TOKEN_ADDRESS) {
-            require(msg.sender == paymentOracle, "Only payment oracle for fiat");
-            require(info.canBePurchasedInFiat, "Fiat not accepted");
-        } else {
-            require(info.acceptedTokenPrices[purchaseToken] > 0, "Token not accepted");
+        // Validate purchase
+        require(info.prices[purchaseToken] > 0, "Token not for sale");
+        
+        // Price calculation with increase mechanism
+        uint256 basePrice = info.prices[purchaseToken];
+        uint256 price = basePrice;
+        
+        if (info.priceIncreaseAmount > 0) {
+            price = info.priceIncreaseType == 0 
+                ? basePrice + (info.priceIncreaseAmount * info.totalPurchased)
+                : basePrice + (basePrice * info.priceIncreaseAmount * info.totalPurchased / 100);
         }
 
-        uint256 price = purchaseToken == FIAT_TOKEN_ADDRESS ? info.priceInFiat : info.acceptedTokenPrices[purchaseToken];
+        // Calculate total price and fees
         uint256 totalPrice = price * amount;
         uint256 fee = (totalPrice * feePercent) / 100;
-        uint256 netPrice = totalPrice - fee;
+        
+        // Payment handling
+        IERC20(purchaseToken).safeTransferFrom(msg.sender, address(this), totalPrice);
+        fees[depositToken][purchaseToken] += fee;
 
-        // Handle payment token transfer and balance updates
-        if (purchaseToken != FIAT_TOKEN_ADDRESS) {
-            IERC20(purchaseToken).safeTransferFrom(msg.sender, address(this), totalPrice);
-            tokenFees[depositToken][purchaseToken] += fee;
-            
-            // Update balances for the deposit token owner
-            if (info.depositTokenOwner != address(0)) {
-                info.tokenBalance[purchaseToken] += netPrice;
-            }
-        }
-
-        // Transfer deposit tokens to recipient
+        // Token transfer
         if (info.isNFT) {
-            require(amount == 1, "Invalid NFT amount");
-            IERC721(depositToken).transferFrom(address(this), recipient, info.tokenId);
-            isDepositToken[depositToken] = false;
-            delete depositTokenInfo[depositToken]; // Clean up storage for NFTs
+            require(amount == 1 && tokenId == info.tokenId, "Invalid NFT transfer");
+            IERC721(depositToken).transferFrom(address(this), recipient, tokenId);
         } else {
-            require(info.depositTokenBalance >= amount, "Insufficient deposit balance");
+            require(info.balance >= amount, "Insufficient balance");
             IERC20(depositToken).safeTransfer(recipient, amount);
-            info.depositTokenBalance -= amount;
-            
-            // Remove deposit if balance is zero
-            if (info.depositTokenBalance == 0) {
-                isDepositToken[depositToken] = false;
-            }
+            info.balance -= amount;
         }
 
-        emit TokenPurchased(msg.sender, recipient, depositToken, purchaseToken, amount, totalPrice);
+        // Update purchase tracking
+        info.totalPurchased += amount;
+        info.prices[purchaseToken] = price;
+
+        emit TokenPurchased(msg.sender, depositToken, amount, price);
     }
 
     // Admin functions
-    function setPaymentOracle(address _paymentOracle) external onlyOwner {
-        require(_paymentOracle != address(0), "Invalid payment oracle address");
-        paymentOracle = _paymentOracle;
-        emit PaymentOracleUpdated(_paymentOracle);
+    function setFeePercent(uint256 _feePercent) external onlyOwner {
+        require(_feePercent <= MAX_FEE, "Fee too high");
+        feePercent = _feePercent;
     }
 
-    function setFeePercent(uint256 newFeePercent) external onlyOwner {
-        require(newFeePercent <= MAX_FEE_PERCENT, "Fee too high");
-        feePercent = newFeePercent;
-        emit FeeUpdated(newFeePercent);
-    }
-
-    function collectFees(address depositToken) external onlyOwner {
-        TokenInfo storage info = depositTokenInfo[depositToken];
-        address[] memory paymentTokens = info.acceptedTokens;
-        uint256[] memory amounts = new uint256[](paymentTokens.length);
-        bool hasFees = false;
-
-        for (uint256 i = 0; i < paymentTokens.length; i++) {
-            uint256 feeAmount = tokenFees[depositToken][paymentTokens[i]];
-            if (feeAmount > 0) {
-                tokenFees[depositToken][paymentTokens[i]] = 0;
-                IERC20(paymentTokens[i]).safeTransfer(owner(), feeAmount);
-                amounts[i] = feeAmount;
-                hasFees = true;
-            }
-        }
-
-        require(hasFees, "No fees to collect");
-        emit FeesCollected(depositToken, paymentTokens, amounts);
-    }
-
-    // Emergency recovery
-    function emergencyRecover(
-        address token,
-        uint256 tokenId,
-        uint256 amount,
-        address recipient
-    ) external onlyOwner {
-        require(recipient != address(0), "Invalid recipient");
-        
-        if (IERC721(token).supportsInterface(0x80ac58cd)) { // ERC721
-            IERC721(token).transferFrom(address(this), recipient, tokenId);
-            emit EmergencyRecovery(token, recipient, tokenId, true);
-        } else {
-            uint256 balance = IERC20(token).balanceOf(address(this));
-            uint256 amountToRecover = amount == type(uint256).max ? balance : amount;
-            IERC20(token).safeTransfer(recipient, amountToRecover);
-            emit EmergencyRecovery(token, recipient, amountToRecover, false);
-        }
-    }
-
-    // Internal helper
-    function trackToken(address token) internal {
-        for (uint256 i = 0; i < trackedTokens.length; i++) {
-            if (trackedTokens[i] == token) return;
-        }
-        trackedTokens.push(token);
+    function setPaymentOracle(address _oracle) external onlyOwner {
+        require(_oracle != address(0), "Invalid oracle");
+        paymentOracle = _oracle;
     }
 }
