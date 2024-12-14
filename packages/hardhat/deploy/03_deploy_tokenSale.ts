@@ -25,7 +25,7 @@ const deployTokenContract: DeployFunction = async function (hre: HardhatRuntimeE
   await deploy("TokenSale", {
     from: deployer,
     log: true,
-    args: [deployer, deployer],
+    args: [deployer],
     // autoMine: can be passed to the deploy function to make the deployment process faster on local networks by
     // automatically mining the contract deployment transaction. There is no effect on live networks.
     autoMine: true,
