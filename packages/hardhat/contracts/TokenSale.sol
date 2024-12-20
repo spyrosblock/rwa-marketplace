@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+// todo there is an issue with the amount passed in and the amount actually sent regarding the 18 decimals
+
 contract TokenSale is Ownable, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
 
@@ -319,16 +321,44 @@ contract TokenSale is Ownable, ReentrancyGuard, Pausable {
 
     // Function for contract owner to collect fees
     function collectFees(address depositToken, address paymentToken) external onlyOwner {
-        uint256 feeAmount = tokenFees[depositToken][paymentToken];
-        require(feeAmount > 0, "No fees to collect");
-
-        // Reset fees before transfer to prevent reentrancy
-        tokenFees[depositToken][paymentToken] = 0;
-
-        // Transfer fees to contract owner
-        IERC20(paymentToken).safeTransfer(owner(), feeAmount);
-
-        emit FeesCollected(depositToken, paymentToken, feeAmount);
+        // If both tokens are specified, collect fees for that specific token pair
+        if (depositToken != address(0) && paymentToken != address(0)) {
+            uint256 feeAmount = tokenFees[depositToken][paymentToken];
+            require(feeAmount > 0, "No fees to collect for this token pair");
+            
+            // Reset fees for this specific token pair
+            tokenFees[depositToken][paymentToken] = 0;
+            
+            // Transfer fees to contract owner
+            IERC20(paymentToken).safeTransfer(owner(), feeAmount);
+            
+            emit FeesCollected(depositToken, paymentToken, feeAmount);
+        } 
+        // If either token is address(0), collect fees for all tracked tokens
+        else {
+            // Iterate through tracked tokens to collect all fees
+            for (uint i = 0; i < trackedTokens.length; i++) {
+                address currentDepositToken = trackedTokens[i];
+                
+                // Iterate through payment tokens for this deposit token
+                for (uint j = 0; j < trackedTokens.length; j++) {
+                    address currentPaymentToken = trackedTokens[j];
+                    
+                    // Collect fees for this token pair
+                    uint256 currentFees = tokenFees[currentDepositToken][currentPaymentToken];
+                    if (currentFees > 0) {
+                        // Transfer fees for this specific token pair
+                        IERC20(currentPaymentToken).safeTransfer(owner(), currentFees);
+                        
+                        // Reset fees for this token pair
+                        tokenFees[currentDepositToken][currentPaymentToken] = 0;
+                        
+                        // Emit event for each token pair
+                        emit FeesCollected(currentDepositToken, currentPaymentToken, currentFees);
+                    }
+                }
+            }
+        }
     }
 
     function setPaymentOracle(address _oracle) external onlyOwner {
