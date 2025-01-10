@@ -2,260 +2,299 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
-interface IGnosisSafe {
-    function execTransactionFromModule(
-        address to,
-        uint256 value,
-        bytes memory data,
-        uint8 operation
-    ) external returns (bool success);
-}
+contract Escrow is Ownable {
+    using Counters for Counters.Counter;
 
-/**
- * @title SafeEscrow
- * @dev An escrow contract that works as a Gnosis Safe module
- */
-contract SafeEscrow is ReentrancyGuard {
-    using Address for address;
-
-    // Gnosis Safe contract this escrow is attached to
-    address public immutable safe;
-    
-    // Escrow states
-    enum EscrowState { Created, Funded, Released, Refunded, Disputed }
-    
-    struct EscrowData {
-        address seller;
-        address buyer;
+    // Struct to track token deposits
+    struct TokenDeposit {
+        address depositor;
         address tokenAddress;
-        uint256 tokenId;        // Used for NFTs
-        uint256 amount;         // Used for ERC20s
-        uint256 price;
-        bool isNFT;
-        EscrowState state;
-        uint256 createdAt;
-        uint256 deadline;
+        uint256 amount;
+        uint256 timestamp;
     }
-    
-    // Mapping from escrow ID to escrow data
-    mapping(bytes32 => EscrowData) public escrows;
-    
+
+    // Struct to track releases
+    struct ReleaseRecord {
+        string releaseId;
+        address[] recipients;
+        uint256[] amounts;
+        bool isFullRelease;
+        string dataJson;
+        uint256 timestamp;
+    }
+
+    // Main Escrow structure
+    struct EscrowDetails {
+        uint256 escrowId;
+        address creator;
+        bool isClosed;
+        bool isLocked;
+        string dataJson;
+        TokenDeposit[] deposits;
+        ReleaseRecord[] releases;
+        uint256 totalTokensDeposited;
+        uint256 totalTokensReleased;
+        uint256 releaseCount;  // Add this line to track release count
+    }
+
+    // Mapping to store escrows
+    mapping(uint256 => EscrowDetails) private escrows;
+    Counters.Counter private escrowCounter;
+    Counters.Counter private releaseCounter;
+
     // Events
-    event EscrowCreated(
-        bytes32 indexed escrowId,
-        address indexed seller,
-        address indexed buyer,
-        address tokenAddress,
-        uint256 amount,
-        uint256 price,
-        bool isNFT,
-        uint256 deadline
-    );
-    event EscrowFunded(bytes32 indexed escrowId);
-    event EscrowReleased(bytes32 indexed escrowId);
-    event EscrowRefunded(bytes32 indexed escrowId);
-    event EscrowDisputed(bytes32 indexed escrowId);
-    
-    constructor(address _safe) {
-        require(_safe.isContract(), "Safe address must be a contract");
-        safe = _safe;
+    event EscrowCreated(uint256 indexed escrowId, address creator);
+    event TokensDeposited(uint256 indexed escrowId, address depositor, address tokenAddress, uint256 amount);
+    event TokensReleased(uint256 indexed escrowId, string releaseId, address[] recipients, uint256[] amounts);
+    event EscrowModified(uint256 indexed escrowId, string newMetadata);
+    event EscrowLocked(uint256 indexed escrowId);
+    event EscrowClosed(uint256 indexed escrowId);
+
+    // Modifier to check if escrow exists
+    modifier escrowExists(uint256 escrowId) {
+        require(escrows[escrowId].escrowId != 0, "Escrow does not exist");
+        _;
     }
-    
-    /**
-     * @dev Creates a new escrow
-     */
-    function createEscrow(
-        address seller,
-        address buyer,
-        address tokenAddress,
-        uint256 tokenIdOrAmount,
-        uint256 price,
-        bool isNFT,
-        uint256 durationInDays
-    ) external returns (bytes32) {
-        require(seller != address(0) && buyer != address(0), "Invalid addresses");
-        require(tokenAddress.isContract(), "Token must be a contract");
-        require(price > 0, "Price must be greater than 0");
-        require(durationInDays > 0, "Duration must be greater than 0");
+
+    // Modifier to check if escrow is not closed
+    modifier escrowNotClosed(uint256 escrowId) {
+        require(!escrows[escrowId].isClosed, "Escrow is closed");
+        _;
+    }
+
+    // Function to get escrow details including deposits and releases
+    // function getEscrow(uint256 escrowId) public view escrowExists(escrowId) returns (EscrowDetails memory) {
+    //     return escrows[escrowId];
+    // }
+
+    // Function to manage escrow (create or modify)
+    function manageEscrow(
+        uint256 escrowId, 
+        string memory metadataJson
+    ) public returns (uint256) {
+        if (escrowId == 0) {
+            // Create new escrow
+            escrowCounter.increment();
+            escrowId = escrowCounter.current();
+
+            escrows[escrowId] = EscrowDetails({
+                escrowId: escrowId,
+                creator: msg.sender,
+                isLocked: false,
+                isClosed: false,
+                dataJson: metadataJson,
+                deposits: new TokenDeposit[](0),
+                releases: new ReleaseRecord[](0),
+                totalTokensDeposited: 0,
+                totalTokensReleased: 0,
+                releaseCount: 0
+            });
+
+            emit EscrowCreated(escrowId, msg.sender);
+            return escrowId;
+        } else {
+            // Modify existing escrow
+            require(
+                msg.sender == escrows[escrowId].creator || msg.sender == owner(), 
+                "Not authorized to modify escrow"
+            );
+            require(!escrows[escrowId].isLocked, "Escrow is locked");
+
+            escrows[escrowId].dataJson = metadataJson;
+            emit EscrowModified(escrowId, metadataJson);
+            return escrowId;
+        }
+    }
+
+    // Function to deposit tokens
+    // needs approval called before on the token being transfered
+    function depositTokens(
+        uint256 escrowId, 
+        address tokenAddress, 
+        uint256 amount
+    ) public escrowExists(escrowId) escrowNotClosed(escrowId) {
+        require(amount > 0, "Deposit amount must be greater than 0");
         
-        bytes32 escrowId = keccak256(
-            abi.encodePacked(
-                seller,
-                buyer,
-                tokenAddress,
-                tokenIdOrAmount,
-                price,
-                isNFT,
-                block.timestamp
-            )
-        );
-        
-        require(escrows[escrowId].createdAt == 0, "Escrow already exists");
-        
-        escrows[escrowId] = EscrowData({
-            seller: seller,
-            buyer: buyer,
+        IERC20 token = IERC20(tokenAddress);
+        require(token.transferFrom(msg.sender, address(this), amount), "Token transfer failed");
+
+        escrows[escrowId].deposits.push(TokenDeposit({
+            depositor: msg.sender,
             tokenAddress: tokenAddress,
-            tokenId: isNFT ? tokenIdOrAmount : 0,
-            amount: isNFT ? 0 : tokenIdOrAmount,
-            price: price,
-            isNFT: isNFT,
-            state: EscrowState.Created,
-            createdAt: block.timestamp,
-            deadline: block.timestamp + (durationInDays * 1 days)
+            amount: amount,
+            timestamp: block.timestamp
+        }));
+
+        emit TokensDeposited(escrowId, msg.sender, tokenAddress, amount);
+    }
+
+    // Function to release tokens
+    function release(
+        uint256 escrowId,
+        address[] memory recipients,
+        uint256[] memory amounts,
+        bool isFullRelease,
+        string memory dataJson
+    ) public escrowExists(escrowId) escrowNotClosed(escrowId) {
+        EscrowDetails storage escrow = escrows[escrowId];
+        require(msg.sender == escrow.creator || msg.sender == owner(), "Not authorized to release");
+
+        // If only one recipient and full release, distribute all tokens
+        if (recipients.length == 1 && isFullRelease && amounts.length == 0) {
+            _releaseAllTokens(escrow, recipients, dataJson);
+        } else {
+            _releasePartialTokens(escrow, recipients, amounts, isFullRelease, dataJson);
+        }
+    }
+
+    function _releaseAllTokens(
+        EscrowDetails storage escrow, 
+        address[] memory recipients, 
+        string memory dataJson
+    ) internal {
+        require(!escrow.isLocked, "Escrow is locked");
+        require(!escrow.isClosed, "Escrow is already closed");
+        require(recipients.length == 1, "Only one recipient allowed for full release");
+
+        address recipient = recipients[0];
+        uint256 totalTokensReleased = 0;
+
+        for (uint256 i = 0; i < escrow.deposits.length; i++) {
+            TokenDeposit memory deposit = escrow.deposits[i];
+            IERC20 token = IERC20(deposit.tokenAddress);
+            
+            // Calculate the remaining amount after previous releases
+            uint256 totalReleased = _calculateReleasedAmount(escrow, deposit.depositor);
+            uint256 remainingAmount = deposit.amount - totalReleased;
+            
+            if (remainingAmount > 0) {
+                require(token.transfer(recipient, remainingAmount), "Token transfer failed");
+                totalTokensReleased += remainingAmount;
+            }
+        }
+
+        // Create release record
+        escrow.releaseCount++;
+        string memory releaseId = _generateReleaseId(escrow.escrowId, escrow.releaseCount);
+        
+        uint256[] memory releaseAmounts = new uint256[](1);
+        releaseAmounts[0] = totalTokensReleased;
+
+        ReleaseRecord memory releaseRecord = ReleaseRecord({
+            releaseId: releaseId,
+            recipients: recipients,
+            amounts: releaseAmounts,
+            isFullRelease: true,
+            timestamp: block.timestamp,
+            dataJson: dataJson
         });
-        
-        emit EscrowCreated(
-            escrowId,
-            seller,
-            buyer,
-            tokenAddress,
-            tokenIdOrAmount,
-            price,
-            isNFT,
-            escrows[escrowId].deadline
-        );
-        
-        return escrowId;
+        escrow.releases.push(releaseRecord);
+
+        // Update escrow state
+        escrow.isClosed = true;
+        escrow.totalTokensReleased += totalTokensReleased;
+
+        emit EscrowClosed(escrow.escrowId);
+        emit TokensReleased(escrow.escrowId, releaseId, recipients, releaseAmounts);
     }
-    
-    /**
-     * @dev Funds an escrow with the seller's tokens
-     */
-    function fundEscrow(bytes32 escrowId) external nonReentrant {
-        EscrowData storage escrow = escrows[escrowId];
-        require(escrow.createdAt > 0, "Escrow does not exist");
-        require(escrow.state == EscrowState.Created, "Invalid escrow state");
-        require(escrow.seller == msg.sender, "Only seller can fund");
+
+    // Helper function to generate release ID
+    function _generateReleaseId(uint256 escrowId, uint256 releaseCount) private pure returns (string memory) {
+        return string(abi.encodePacked(
+            Strings.toString(escrowId), 
+            "-", 
+            Strings.toString(releaseCount)
+        ));
+    }
+
+    // Internal function to release partial tokens
+    function _releasePartialTokens(
+        EscrowDetails storage escrow, 
+        address[] memory recipients,
+        uint256[] memory amounts,
+        bool isFullRelease,
+        string memory dataJson
+    ) internal {
+        require(recipients.length == amounts.length, "Mismatched recipients and amounts");
         
-        if (escrow.isNFT) {
-            IERC721(escrow.tokenAddress).transferFrom(
-                msg.sender,
-                address(this),
-                escrow.tokenId
-            );
-        } else {
-            IERC20(escrow.tokenAddress).transferFrom(
-                msg.sender,
-                address(this),
-                escrow.amount
-            );
+        escrow.releaseCount++;  // Increment release count
+        string memory releaseId = _generateReleaseId(escrow.escrowId, escrow.releaseCount);
+
+        uint256 totalReleased = 0;
+        for (uint i = 0; i < recipients.length; i++) {
+            IERC20 token = IERC20(escrow.deposits[0].tokenAddress);
+            require(token.transfer(recipients[i], amounts[i]), "Token transfer failed");
+            totalReleased += amounts[i];
         }
-        
-        escrow.state = EscrowState.Funded;
-        emit EscrowFunded(escrowId);
-    }
-    
-    /**
-     * @dev Releases the escrow to the buyer (requires Safe multi-sig)
-     */
-    function releaseEscrow(bytes32 escrowId) external nonReentrant {
-        EscrowData storage escrow = escrows[escrowId];
-        require(escrow.state == EscrowState.Funded, "Invalid escrow state");
-        
-        // Transfer tokens to buyer through Safe
-        bytes memory data;
-        if (escrow.isNFT) {
-            data = abi.encodeWithSelector(
-                IERC721.transferFrom.selector,
-                address(this),
-                escrow.buyer,
-                escrow.tokenId
-            );
-            IGnosisSafe(safe).execTransactionFromModule(
-                escrow.tokenAddress,
-                0,
-                data,
-                0
-            );
-        } else {
-            data = abi.encodeWithSelector(
-                IERC20.transfer.selector,
-                escrow.buyer,
-                escrow.amount
-            );
-            IGnosisSafe(safe).execTransactionFromModule(
-                escrow.tokenAddress,
-                0,
-                data,
-                0
-            );
+
+        // If full release, ensure all tokens are accounted for
+        if (isFullRelease) {
+            uint256 totalDeposited = 0;
+            for (uint i = 0; i < escrow.deposits.length; i++) {
+                totalDeposited += escrow.deposits[i].amount;
+            }
+            require(totalReleased == totalDeposited, "Not all tokens released");
+            escrow.isClosed = true;
         }
-        
-        escrow.state = EscrowState.Released;
-        emit EscrowReleased(escrowId);
+
+        escrow.releases.push(ReleaseRecord({
+            releaseId: releaseId,
+            recipients: recipients,
+            amounts: amounts,
+            isFullRelease: isFullRelease,
+            dataJson: dataJson,
+            timestamp: block.timestamp
+        }));
+
+        emit TokensReleased(escrow.escrowId, releaseId, recipients, amounts);
     }
-    
-    /**
-     * @dev Refunds the escrow to the seller (requires Safe multi-sig)
-     */
-    function refundEscrow(bytes32 escrowId) external nonReentrant {
-        EscrowData storage escrow = escrows[escrowId];
-        require(escrow.state == EscrowState.Funded, "Invalid escrow state");
-        
-        // Transfer tokens back to seller through Safe
-        bytes memory data;
-        if (escrow.isNFT) {
-            data = abi.encodeWithSelector(
-                IERC721.transferFrom.selector,
-                address(this),
-                escrow.seller,
-                escrow.tokenId
-            );
-            IGnosisSafe(safe).execTransactionFromModule(
-                escrow.tokenAddress,
-                0,
-                data,
-                0
-            );
-        } else {
-            data = abi.encodeWithSelector(
-                IERC20.transfer.selector,
-                escrow.seller,
-                escrow.amount
-            );
-            IGnosisSafe(safe).execTransactionFromModule(
-                escrow.tokenAddress,
-                0,
-                data,
-                0
-            );
+
+    // Function to refund tokens proportionally
+    function refund(uint256 escrowId) public escrowExists(escrowId) {
+        EscrowDetails storage escrow = escrows[escrowId];
+        require(escrow.isClosed, "Escrow must be closed to refund");
+
+        for (uint i = 0; i < escrow.deposits.length; i++) {
+            TokenDeposit memory deposit = escrow.deposits[i];
+            uint256 totalDeposited = deposit.amount;
+            uint256 totalReleased = _calculateReleasedAmount(escrow, deposit.depositor);
+            
+            uint256 refundAmount = totalDeposited - totalReleased;
+            if (refundAmount > 0) {
+                IERC20 token = IERC20(deposit.tokenAddress);
+                require(token.transfer(deposit.depositor, refundAmount), "Refund transfer failed");
+            }
         }
-        
-        escrow.state = EscrowState.Refunded;
-        emit EscrowRefunded(escrowId);
     }
-    
-    /**
-     * @dev Marks an escrow as disputed (can only be called by buyer or seller)
-     */
-    function disputeEscrow(bytes32 escrowId) external {
-        EscrowData storage escrow = escrows[escrowId];
+
+    // Helper function to calculate released amount for a specific depositor
+    function _calculateReleasedAmount(
+        EscrowDetails storage escrow, 
+        address depositor
+    ) internal view returns (uint256) {
+        uint256 releasedAmount = 0;
+        for (uint256 i = 0; i < escrow.releases.length; i++) {
+            ReleaseRecord memory currentRelease = escrow.releases[i];
+            for (uint256 j = 0; j < currentRelease.recipients.length; j++) {
+                if (currentRelease.recipients[j] == depositor) {
+                    releasedAmount += currentRelease.amounts[j];
+                }
+            }
+        }
+        return releasedAmount;
+    }
+
+    // Function to lock escrow (only callable by creator or owner)
+    function lockEscrow(uint256 escrowId) public escrowExists(escrowId) {
         require(
-            msg.sender == escrow.buyer || msg.sender == escrow.seller,
-            "Only buyer or seller can dispute"
+            msg.sender == escrows[escrowId].creator || msg.sender == owner(), 
+            "Not authorized to lock escrow"
         );
-        require(escrow.state == EscrowState.Funded, "Invalid escrow state");
-        
-        escrow.state = EscrowState.Disputed;
-        emit EscrowDisputed(escrowId);
-    }
-    
-    /**
-     * @dev Returns true if the escrow has expired
-     */
-    function isExpired(bytes32 escrowId) public view returns (bool) {
-        return block.timestamp > escrows[escrowId].deadline;
-    }
-    
-    /**
-     * @dev Returns the current state of an escrow
-     */
-    function getEscrowState(bytes32 escrowId) external view returns (EscrowState) {
-        return escrows[escrowId].state;
+        escrows[escrowId].isLocked = true;
+        emit EscrowLocked(escrowId);
     }
 }
