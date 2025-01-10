@@ -81,18 +81,16 @@ contract Escrow is Ownable {
             escrowCounter.increment();
             escrowId = escrowCounter.current();
 
-            escrows[escrowId] = EscrowDetails({
-                escrowId: escrowId,
-                creator: msg.sender,
-                isLocked: false,
-                isClosed: false,
-                dataJson: metadataJson,
-                deposits: new TokenDeposit[](0),
-                releases: new ReleaseRecord[](0),
-                totalTokensDeposited: 0,
-                totalTokensReleased: 0,
-                releaseCount: 0
-            });
+            // Initialize the new escrow in storage
+            EscrowDetails storage newEscrow = escrows[escrowId];
+            newEscrow.escrowId = escrowId;
+            newEscrow.creator = msg.sender;
+            newEscrow.isLocked = false;
+            newEscrow.isClosed = false;
+            newEscrow.dataJson = metadataJson;
+            newEscrow.totalTokensDeposited = 0;
+            newEscrow.totalTokensReleased = 0;
+            newEscrow.releaseCount = 0;
 
             emit EscrowCreated(escrowId, msg.sender);
             return escrowId;
