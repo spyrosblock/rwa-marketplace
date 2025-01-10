@@ -21,10 +21,6 @@ export const HeaderMenuLinks = () => {
       label: "Create",
       href: "/create",
     },
-    {
-      label: "Dirt Dao",
-      href: "/dirtdao",
-    },
   ];
 
   if (process.env.NODE_ENV === "development") {

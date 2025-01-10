@@ -15,6 +15,7 @@ contract Escrow is Ownable {
         address tokenAddress;
         uint256 amount;
         uint256 timestamp;
+        string jsonData;
     }
 
     // Struct to track releases
@@ -67,9 +68,9 @@ contract Escrow is Ownable {
     }
 
     // Function to get escrow details including deposits and releases
-    // function getEscrow(uint256 escrowId) public view escrowExists(escrowId) returns (EscrowDetails memory) {
-    //     return escrows[escrowId];
-    // }
+    function getEscrow(uint256 escrowId) public view escrowExists(escrowId) returns (EscrowDetails memory) {
+        return escrows[escrowId];
+    }
 
     // Function to manage escrow (create or modify)
     function manageEscrow(
@@ -113,7 +114,8 @@ contract Escrow is Ownable {
     function depositTokens(
         uint256 escrowId, 
         address tokenAddress, 
-        uint256 amount
+        uint256 amount,
+        string memory jsonData
     ) public escrowExists(escrowId) escrowNotClosed(escrowId) {
         require(amount > 0, "Deposit amount must be greater than 0");
         
@@ -124,7 +126,8 @@ contract Escrow is Ownable {
             depositor: msg.sender,
             tokenAddress: tokenAddress,
             amount: amount,
-            timestamp: block.timestamp
+            timestamp: block.timestamp,
+            jsonData: jsonData
         }));
 
         emit TokensDeposited(escrowId, msg.sender, tokenAddress, amount);
@@ -254,7 +257,7 @@ contract Escrow is Ownable {
     // Function to refund tokens proportionally
     function refund(uint256 escrowId) public escrowExists(escrowId) {
         EscrowDetails storage escrow = escrows[escrowId];
-        require(escrow.isClosed, "Escrow must be closed to refund");
+        require(!escrow.isClosed, "Closed escrows cannot be refunded.");
 
         for (uint i = 0; i < escrow.deposits.length; i++) {
             TokenDeposit memory deposit = escrow.deposits[i];

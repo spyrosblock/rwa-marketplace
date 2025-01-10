@@ -2421,7 +2421,7 @@ const deployedContracts = {
       },
     },
     Escrow: {
-      address: "0x6203078AAcE0c54bb1ae97aa97142f1E3512D3e7",
+      address: "0xCD97F0593f77F109CA3Cd178bA9940A827858eA7",
       abi: [
         {
           anonymous: false,
@@ -2585,10 +2585,145 @@ const deployedContracts = {
               name: "amount",
               type: "uint256",
             },
+            {
+              internalType: "string",
+              name: "jsonData",
+              type: "string",
+            },
           ],
           name: "depositTokens",
           outputs: [],
           stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "escrowId",
+              type: "uint256",
+            },
+          ],
+          name: "getEscrow",
+          outputs: [
+            {
+              components: [
+                {
+                  internalType: "uint256",
+                  name: "escrowId",
+                  type: "uint256",
+                },
+                {
+                  internalType: "address",
+                  name: "creator",
+                  type: "address",
+                },
+                {
+                  internalType: "bool",
+                  name: "isClosed",
+                  type: "bool",
+                },
+                {
+                  internalType: "bool",
+                  name: "isLocked",
+                  type: "bool",
+                },
+                {
+                  internalType: "string",
+                  name: "dataJson",
+                  type: "string",
+                },
+                {
+                  components: [
+                    {
+                      internalType: "address",
+                      name: "depositor",
+                      type: "address",
+                    },
+                    {
+                      internalType: "address",
+                      name: "tokenAddress",
+                      type: "address",
+                    },
+                    {
+                      internalType: "uint256",
+                      name: "amount",
+                      type: "uint256",
+                    },
+                    {
+                      internalType: "uint256",
+                      name: "timestamp",
+                      type: "uint256",
+                    },
+                    {
+                      internalType: "string",
+                      name: "jsonData",
+                      type: "string",
+                    },
+                  ],
+                  internalType: "struct Escrow.TokenDeposit[]",
+                  name: "deposits",
+                  type: "tuple[]",
+                },
+                {
+                  components: [
+                    {
+                      internalType: "string",
+                      name: "releaseId",
+                      type: "string",
+                    },
+                    {
+                      internalType: "address[]",
+                      name: "recipients",
+                      type: "address[]",
+                    },
+                    {
+                      internalType: "uint256[]",
+                      name: "amounts",
+                      type: "uint256[]",
+                    },
+                    {
+                      internalType: "bool",
+                      name: "isFullRelease",
+                      type: "bool",
+                    },
+                    {
+                      internalType: "string",
+                      name: "dataJson",
+                      type: "string",
+                    },
+                    {
+                      internalType: "uint256",
+                      name: "timestamp",
+                      type: "uint256",
+                    },
+                  ],
+                  internalType: "struct Escrow.ReleaseRecord[]",
+                  name: "releases",
+                  type: "tuple[]",
+                },
+                {
+                  internalType: "uint256",
+                  name: "totalTokensDeposited",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "totalTokensReleased",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "releaseCount",
+                  type: "uint256",
+                },
+              ],
+              internalType: "struct Escrow.EscrowDetails",
+              name: "",
+              type: "tuple",
+            },
+          ],
+          stateMutability: "view",
           type: "function",
         },
         {
