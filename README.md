@@ -1,8 +1,9 @@
 # L£GT - Legally Empowered Governance Tokens
 
-<p align="center">
-  <img src="https://docs.legt.co" alt="L£GT Logo" />
-</p>
+<h4 align="center">
+  <a href="https://docs.legt.co">Documentation</a> |
+  <a href="https://legt.co">Website</a>
+</h4>
 
 > An open & permissionless RWA (Real World Assets) protocol that securely attaches legal contracts to NFT and ERC20 tokens, enabling digital meets physical.
 
