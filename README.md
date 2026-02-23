@@ -1,81 +1,297 @@
-# L £ G T
+# L£GT - Legally Empowered Governance Tokens
 
-<h4 align="center">
-  <a href="https://docs.scaffoldeth.io">Documentation</a> |
-  <a href="https://scaffoldeth.io">Website</a>
-</h4>
+<p align="center">
+  <img src="https://docs.legt.co" alt="L£GT Logo" />
+</p>
 
-🧪 An open-source, up-to-date toolkit for building decentralized applications (dapps) on the Ethereum blockchain. It's designed to make it easier for developers to create and deploy smart contracts and build user interfaces that interact with those contracts.
+> An open & permissionless RWA (Real World Assets) protocol that securely attaches legal contracts to NFT and ERC20 tokens, enabling digital meets physical.
 
-⚙️ Built using NextJS, RainbowKit, Hardhat, Wagmi, Viem, and Typescript.
+## 📖 Overview
 
-- ✅ **Contract Hot Reload**: Your frontend auto-adapts to your smart contract as you edit it.
-- 🪝 **[Custom hooks](https://docs.scaffoldeth.io/hooks/)**: Collection of React hooks wrapper around [wagmi](https://wagmi.sh/) to simplify interactions with smart contracts with typescript autocompletion.
-- 🧱 [**Components**](https://docs.scaffoldeth.io/components/): Collection of common web3 components to quickly build your frontend.
-- 🔥 **Burner Wallet & Local Faucet**: Quickly test your application with a burner wallet and local faucet.
-- 🔐 **Integration with Wallet Providers**: Connect to different wallet providers and interact with the Ethereum network.
+L£GT (Legally Empowered Governance Tokens) is a decentralized marketplace protocol built on Ethereum that bridges the gap between digital tokens and real-world assets. It enables users to tokenize real-world assets with legally binding contracts, handle jurisdictional compliance, resolve on-chain disputes, and achieve instant RWA liquidity.
 
-![Debug Contracts tab](https://github.com/scaffold-eth/scaffold-eth-2/assets/55535804/b237af0c-5027-4849-a5c1-2e31495cccb1)
+This project is built on [Scaffold-ETH 2](https://github.com/scaffold-eth/scaffold-eth-2) - a minimal and forkable repo providing builders with a starter kit to build decentralized applications on Ethereum.
 
-## Requirements
+## 🏗 Architecture
 
-Before you begin, you need to install the following tools:
-
-- [Node (>= v18.17)](https://nodejs.org/en/download/)
-- Yarn ([v1](https://classic.yarnpkg.com/en/docs/install/) or [v2+](https://yarnpkg.com/getting-started/install))
-- [Git](https://git-scm.com/downloads)
-
-## Quickstart
-
-To get started with Scaffold-ETH 2, follow the steps below:
-
-1. Clone this repo & install dependencies
+This is a monorepo using Yarn workspaces containing two main packages:
 
 ```
-git clone https://github.com/scaffold-eth/scaffold-eth-2.git
-cd scaffold-eth-2
+rwa-marketplace/
+├── packages/
+│   ├── hardhat/          # Solidity smart contracts
+│   │   ├── contracts/     # Smart contracts
+│   │   ├── deploy/       # Deployment scripts
+│   │   ├── test/         # Contract tests
+│   │   └── hardhat.config.ts
+│   └── nextjs/           # Next.js frontend
+│       ├── app/          # Next.js App Router pages
+│       ├── components/   # React components
+│       ├── hooks/       # Custom React hooks
+│       ├── services/    # Web3 & IPFS services
+│       └── utils/       # Utility functions
+```
+
+##  Smart Contracts
+
+### Core Contracts
+
+| Contract | Description |
+|----------|-------------|
+| `NFTFactory` | Factory for creating NFTs that can represent real-world assets |
+| `NFTFactoryKyc` | NFT Factory with KYC (Know Your Customer) compliance |
+| `ERC20Factory` | Factory for creating ERC20 governance tokens |
+| `ERC20FactoryKyc` | ERC20 Factory with KYC compliance |
+| `ERC20Ownable` | ERC20 token with ownership and pause capabilities |
+| `ERC20OwnableKyc` | ERC20 with KYC and additional compliance features |
+| `TokenSale` | Marketplace for buying/selling tokens with dynamic pricing |
+| `Escrow` | Secure escrow for handling token transactions |
+| `Disperse` | Utility for dispersing tokens to multiple addresses |
+
+### Key Features
+
+- **KYC Integration**: Support for compliant token creation with KYC checks
+- **Legal Attachments**: Attach legal contracts to NFTs and ERC20 tokens
+- **Dynamic Pricing**: Flexible pricing mechanisms for token sales
+- **Escrow System**: Secure transaction handling
+- **Pause/Unpause**: Emergency controls for token transfers
+- **Lock/Unlock**: Ability to lock tokens for compliance
+
+## 🛠 Tech Stack
+
+### Smart Contracts
+- **Solidity** 0.8.19
+- **Hardhat** - Ethereum development environment
+- **OpenZeppelin** - Secure smart contract libraries
+- **TypeChain** - TypeScript bindings for contracts
+
+### Frontend
+- **Next.js** 14 - React framework
+- **React** 18 - UI library
+- **Wagmi** - React hooks for Ethereum
+- **RainbowKit** - Wallet connection UI
+- **Tailwind CSS** - Utility-first CSS
+- **Chakra UI** - Component library
+- **TypeScript** - Type safety
+
+### Infrastructure
+- **IPFS** - Decentralized storage for metadata
+- **Alchemy** - RPC provider
+- **Etherscan** - Contract verification
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js >= 18.17.0
+- Yarn 3.2.3+ (configured as package manager)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/spyrosblock/rwa-marketplace.git
+cd rwa-marketplace
+
+# Install dependencies
 yarn install
 ```
 
-2. Run a local network in the first terminal:
+### Environment Setup
 
+1. Copy the example environment files:
+
+```bash
+cp packages/hardhat/.env.example packages/hardhat/.env
+cp packages/nextjs/.env.example packages/nextjs/.env
 ```
+
+2. Configure your environment variables in `.env`:
+
+**Hardhat (.env):**
+```
+ALCHEMY_API_KEY=your_alchemy_api_key
+DEPLOYER_PRIVATE_KEY=your_private_key
+ETHERSCAN_API_KEY=your_etherscan_api_key
+KINTO_DEPLOYER_PRIVATE_KEY=your_kinto_private_key  # for Kinto network
+```
+
+**Nextjs (.env):**
+```
+NEXT_PUBLIC_ALCHEMY_API_KEY=your_alchemy_api_key
+NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_wallet_connect_id
+```
+
+### Running Local Development
+
+```bash
+# Start the local blockchain
 yarn chain
-```
 
-This command starts a local Ethereum network using Hardhat. The network runs on your local machine and can be used for testing and development. You can customize the network configuration in `hardhat.config.ts`.
-
-3. On a second terminal, deploy the test contract:
-
-```
+# In a new terminal, deploy contracts to localhost
 yarn deploy
-```
 
-This command deploys a test smart contract to the local network. The contract is located in `packages/hardhat/contracts` and can be modified to suit your needs. The `yarn deploy` command uses the deploy script located in `packages/hardhat/deploy` to deploy the contract to the network. You can also customize the deploy script.
-
-4. On a third terminal, start your NextJS app:
-
-```
+# Start the Next.js development server
 yarn start
 ```
 
-Visit your app on: `http://localhost:3000`. You can interact with your smart contract using the `Debug Contracts` page. You can tweak the app config in `packages/nextjs/scaffold.config.ts`.
+The application will be available at `http://localhost:3000`.
 
-**What's next**:
+### Building for Production
 
-- Edit your smart contract `YourContract.sol` in `packages/hardhat/contracts`
-- Edit your frontend homepage at `packages/nextjs/app/page.tsx`. For guidance on [routing](https://nextjs.org/docs/app/building-your-application/routing/defining-routes) and configuring [pages/layouts](https://nextjs.org/docs/app/building-your-application/routing/pages-and-layouts) checkout the Next.js documentation.
-- Edit your deployment scripts in `packages/hardhat/deploy`
-- Edit your smart contract test in: `packages/hardhat/test`. To run test use `yarn hardhat:test`
+```bash
+# Build the Next.js application
+yarn next:build
 
-## Documentation
+# Serve the production build
+yarn next:serve
+```
 
-Visit our [docs](https://docs.scaffoldeth.io) to learn how to start building with Scaffold-ETH 2.
+## 📝 Available Scripts
 
-To know more about its features, check out our [website](https://scaffoldeth.io).
+### Root Scripts
+```bash
+yarn start              # Start Next.js dev server
+yarn build              # Build for production
+yarn test               # Run tests
+yarn chain              # Start local Hardhat node
+yarn deploy             # Deploy contracts
+yarn verify             # Verify contracts on Etherscan
+yarn format             # Format code (Prettier)
+yarn lint               # Lint code (ESLint)
+```
 
-## Contributing to Scaffold-ETH 2
+### Hardhat Scripts
+```bash
+yarn hardhat:compile    # Compile contracts
+yarn hardhat:test       # Run contract tests
+yarn hardhat:clean      # Clean and redeploy
+yarn hardhat:account   # List available accounts
+```
 
-We welcome contributions to Scaffold-ETH 2!
+### Next.js Scripts
+```bash
+yarn next:build         # Build Next.js app
+yarn next:serve        # Serve production build
+yarn next:check-types  # TypeScript type checking
+```
 
-Please see [CONTRIBUTING.MD](https://github.com/scaffold-eth/scaffold-eth-2/blob/main/CONTRIBUTING.md) for more information and guidelines for contributing to Scaffold-ETH 2.
+## 🌐 Supported Networks
+
+The project is configured to work with multiple networks:
+
+| Network | Chain ID | Type |
+|---------|----------|------|
+| Kinto | 7887 | Mainnet |
+| Base Sepolia | 84532 | Testnet |
+| Sepolia | 11155111 | Testnet |
+| Arbitrum | 42161 | Mainnet |
+| Arbitrum Sepolia | 421614 | Testnet |
+| Optimism | 10 | Mainnet |
+| Optimism Sepolia | 11155420 | Testnet |
+| Polygon | 137 | Mainnet |
+| Polygon zkEVM | 1101 | Mainnet |
+| Gnosis | 100 | Mainnet |
+| Base | 8453 | Mainnet |
+| Scroll | 534352 | Mainnet |
+| PGN | 424 | Mainnet |
+
+## 📄 Deployment
+
+### Deploying to Base Sepolia
+
+```bash
+yarn hardhat deploy --network baseSepolia
+```
+
+### Deploying to Kinto
+
+```bash
+yarn hardhat deploy --network kinto
+```
+
+After deployment, update the `deployedContracts.ts` file or run the automatic generation:
+
+```bash
+yarn hardhat generate
+```
+
+## 🔧 Development
+
+### Code Formatting
+
+```bash
+yarn format
+```
+
+### Linting
+
+```bash
+yarn lint
+```
+
+### Running Tests
+
+```bash
+# Run Hardhat tests
+yarn hardhat:test
+
+# Or from root
+yarn test
+```
+
+## 📁 Project Structure
+
+### Frontend Pages (`packages/nextjs/app/`)
+
+- `/` - Home page - L£GT introduction
+- `/create` - Mint new RWA tokens
+- `/dashboard` - User dashboard
+- `/marketplace` - Browse marketplace
+- `/nft` - NFT management
+- `/kyc` - KYC compliance
+- `/dirtdao` - DAO governance
+- `/blockexplorer` - Transaction explorer
+- `/debug` - Debug tools
+
+### Smart Contract Structure
+
+```
+contracts/
+├── ERC20Factory.sol          # ERC20 token factory
+├── ERC20FactoryKyc.sol       # ERC20 factory with KYC
+├── ERC20Ownable.sol          # Ownable ERC20 implementation
+├── ERC20OwnableKyc.sol      # Ownable ERC20 with KYC
+├── NFTFactory.sol            # NFT factory
+├── NFTFactoryKyc.sol         # NFT factory with KYC
+├── TokenSale.sol             # Token sale marketplace
+├── Escrow.sol                # Escrow contract
+├── Disperse.sol              # Token distribution
+├── YourContract.sol         # Template contract
+└── interfaces/               # Interface definitions
+    └── ICupOfDirt.sol
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details on how to contribute.
+
+## license
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🔗 Links
+
+- [Documentation](https://docs.legt.co)
+- [Discord](https://discord.gg/BKSRV5fFRH)
+- [GitHub](https://github.com/spyrosblock/rwa-marketplace)
+
+## 🙏 Acknowledgments
+
+Built with [Scaffold-ETH 2](https://github.com/scaffold-eth/scaffold-eth-2) - the fastest way to build Ethereum dApps.
+
+---
+
+<p align="center">
+  Where <strong>digital</strong> meets <strong>physical</strong>
+</p>
